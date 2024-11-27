@@ -9,12 +9,19 @@ class LobbyPlayerUpdatedState extends LobbyState {
   final String currentPlayerId;
   final bool isPlayer1Ready, isPlayer2Ready;
 
-
   LobbyPlayerUpdatedState({
     required this.player1,
     required this.player2,
     required this.currentPlayerId,
     required this.isPlayer1Ready,
     required this.isPlayer2Ready,
+  });
+}
+
+class LobbyLoadingState extends LobbyState {
+  final bool isLoading;
+
+  LobbyLoadingState({
+    this.isLoading = true,
   });
 }

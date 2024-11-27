@@ -10,6 +10,7 @@ class GameSession {
   String? lastReady;
   DateTime? startTime;
   DateTime? expireTime;
+  DateTime? timestamp;
 
   GameSession({
     required this.sessionId,
@@ -21,6 +22,7 @@ class GameSession {
     this.isActive,
     this.startTime,
     this.expireTime,
+    this.timestamp,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class GameSession {
       'gameStatus': gameStatus,
       'startTime': startTime?.toUtc(),
       'expireTime': expireTime?.toUtc(),
+      'timestamp': timestamp,
     };
   }
 
@@ -70,6 +73,7 @@ class GameSession {
       gameStatus: map['gameStatus'],
       startTime: (map['startTime'] as Timestamp?)?.toDate(),
       expireTime: (map['expireTime'] as Timestamp?)?.toDate(),
+      timestamp: (map['timestamp'] as Timestamp?)?.toDate(),
     );
   }
 }

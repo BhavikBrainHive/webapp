@@ -9,3 +9,9 @@ class LobbyInitialEvent extends LobbyEvent {
     required this.gameSession,
   });
 }
+
+class LobbyPlayerReadyEvent extends LobbyEvent{
+  final bool isReady;
+
+  LobbyPlayerReadyEvent(this.isReady);
+}

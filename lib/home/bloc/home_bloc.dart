@@ -53,6 +53,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         emit(GameSessionFoundState(alreadyGoingSession));
       }
     }
+    emit(
+      ProfileLoadingState(
+        isLoading: false,
+      ),
+    );
     await _userSubscription?.asFuture();
   }
 
@@ -61,7 +66,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     if (profile != null) {
+      emit(ProfileLoadingState());
       final gameSession = await joinGameSession();
+      emit(ProfileLoadingState(isLoading: false));
       emit(GameSessionFoundState(gameSession));
     }
   }
@@ -82,6 +89,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           'playerIds',
           arrayContains: playerId,
         )
+        .orderBy('timestamp', descending: true)
+        .limit(1)
         .get();
 
     if (waitingSessions.docs.isNotEmpty &&
@@ -123,6 +132,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         .collection('gameSessions')
         .where('isActive', isEqualTo: true)
         .where('gameStatus', isEqualTo: GameStatus.waiting.name)
+        .orderBy('timestamp', descending: true)
         .get();
 
     if (availableSessions.docs.isNotEmpty) {
@@ -183,7 +193,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     await FirebaseFirestore.instance
         .collection('gameSessions')
         .doc(sessionId)
-        .set(gameSession.toMap());
+        .set(
+          gameSession.toMap()
+            ..putIfAbsent(
+              'timestamp',
+              () => FieldValue.serverTimestamp(),
+            ),
+        );
 
     return gameSession;
   }

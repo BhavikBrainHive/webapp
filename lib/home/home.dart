@@ -6,9 +6,22 @@ import 'package:webapp/home/bloc/home_state.dart';
 import 'package:webapp/model/user.dart';
 
 import 'bloc/home_bloc.dart';
+import 'dart:html' as html;
 
 class Home extends StatelessWidget {
   const Home({super.key});
+
+  void disableBackNavigation() {
+    // Push a new state to prevent back navigation
+    html.window.history
+        .pushState(null, 'Disable Back', html.window.location.href);
+
+    // Listen for popstate and re-push the state
+    html.window.onPopState.listen((event) {
+      html.window.history
+          .pushState(null, 'Disable Back', html.window.location.href);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,24 +38,28 @@ class Home extends StatelessWidget {
         } else {
           profile = homeBloc.userProfile;
         }
+        final isLoading = profile == null ||
+            (state is ProfileLoadingState && state.isLoading);
         return Scaffold(
-          body: profile == null || state is ProfileLoadingState
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : Center(
+          body: PopScope(
+            canPop: false,
+            child: Stack(
+              children: [
+                Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.network(
-                        profile.photoUrl ?? '',
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(profile?.photoUrl ?? ''),
+                        radius: 50,
                       ),
                       const SizedBox(
                         height: 20,
                       ),
                       Text(
-                        profile.name,
+                        profile?.name ?? '',
                       ),
                       const SizedBox(
                         height: 30,
@@ -58,6 +75,16 @@ class Home extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (isLoading)
+                  AbsorbPointer(
+                    absorbing: isLoading,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );

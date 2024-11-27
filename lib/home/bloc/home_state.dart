@@ -11,7 +11,13 @@ class ProfileUpdatedState extends HomeState {
   ProfileUpdatedState(this.profile);
 }
 
-class ProfileLoadingState extends HomeState {}
+class ProfileLoadingState extends HomeState {
+  final bool isLoading;
+
+  ProfileLoadingState({
+    this.isLoading = true,
+  });
+}
 
 class GameSessionFoundState extends HomeState {
   final GameSession gameSession;

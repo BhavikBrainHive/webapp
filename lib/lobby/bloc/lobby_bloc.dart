@@ -21,21 +21,20 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
 
   LobbyBloc() : super(LobbyInitialState()) {
     on<LobbyInitialEvent>(_init);
+    on<LobbyPlayerReadyEvent>(_updateReadyStatus);
   }
 
   Future<void> _init(
     LobbyInitialEvent event,
     Emitter<LobbyState> emit,
   ) async {
-    await _listenToGameSessionChanges(
-      event.gameSession.sessionId,
-      emit,
-    );
+    emit(LobbyLoadingState());
+    sessionId = event.gameSession.sessionId;
+    await _listenToGameSessionChanges(emit);
     await _gameSessionSubscription?.asFuture();
   }
 
   Future<void> _listenToGameSessionChanges(
-    String sessionId,
     Emitter<LobbyState> emit,
   ) async {
     final currentUser = _fireAuthInstance.currentUser;
@@ -68,12 +67,15 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
               _player2 = await _getOpponentPlayer(player2Id);
             }
 
-            if (_player1 != player1 ||
-                _player2 != player2 ||
+            if ((_player1 != null && player1 == null) ||
+                (_player2 != null && player2 == null) ||
                 _player1Ready != player1Ready ||
                 _player2Ready != player2Ready) {
-              player1 = _player1;
-              player2 = _player2;
+              if ((_player1 != null && player1 == null) ||
+                  (_player2 != null && player2 == null)) {
+                player1 = _player1;
+                player2 = _player2;
+              }
 
               player1Ready = _player1Ready;
               player2Ready = _player2Ready;
@@ -89,15 +91,26 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
               //if both players are ready
               if (gameSession.lastReady != null &&
                   player1Ready &&
-                  player2Ready) {}
+                  player2Ready) {
+                await _gameSessionSubscription?.cancel();
+                if (currentUser.uid == gameSession.lastReady!) {
+
+                }
+                _startTheGamePlay();
+              }
             }
           } catch (e, stackTrace) {
             debugPrint("Error: $e");
             debugPrint("Stacktrace: $stackTrace");
           }
         }
+        emit(LobbyLoadingState(isLoading: false));
       },
     );
+  }
+
+  void _startTheGamePlay() {
+
   }
 
   Future<UserProfile> _getOpponentPlayer(
@@ -109,8 +122,11 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   }
 
   Future<void> _updateReadyStatus(
-    bool isReady,
+    LobbyPlayerReadyEvent event,
+    Emitter<LobbyState> emit,
   ) async {
+    emit(LobbyLoadingState());
+    final isReady = event.isReady;
     final currentUserId = _fireAuthInstance.currentUser!.uid;
     final sessionRef =
         _fireStoreInstance.collection('gameSessions').doc(sessionId);
@@ -134,6 +150,8 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
           'playerReady': playerReady,
           'lastReady': currentUserId,
         });
+      } else {
+        emit(LobbyLoadingState(isLoading: false));
       }
     });
   }
