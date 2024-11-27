@@ -69,18 +69,20 @@ class Home extends StatelessWidget {
   ) {
     if (state is GameSessionFoundState) {
       final gameSession = state.gameSession;
-      if (gameSession.gameStatus == GameStatus.started.name &&
-          (gameSession.playerIds
+      if ((gameSession.playerIds
                       ?.where((item) => item != null && item.trim().isNotEmpty)
                       .length ??
                   0) >
-              1) {
+              1 &&
+          (gameSession.playerReady?.values.length ?? 0) > 1 &&
+          gameSession.playerReady!.values.every((test) => test == true)) {
         Navigator.pushNamed(
           context,
           '/gamePlay',
           arguments: gameSession,
         );
-      } else if (gameSession.gameStatus == GameStatus.waiting.name) {
+      } else if (gameSession.gameStatus == GameStatus.started.name ||
+          gameSession.gameStatus == GameStatus.waiting.name) {
         Navigator.pushNamed(
           context,
           '/lobby',

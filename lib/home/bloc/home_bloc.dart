@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/model/game_session.dart';
 
@@ -42,7 +43,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         } else {
           profile = null;
         }
-        emit(ProfileUpdatedState(profile!));
+        if (profile != null) {
+          emit(ProfileUpdatedState(profile!));
+        }
       });
 
       final alreadyGoingSession = await _checkIfAnyGameGoing(user.uid);
@@ -85,9 +88,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         waitingSessions.docs.first.data().isNotEmpty) {
       // Already in a session
       try {
-        return GameSession.fromMap(
+        final session = GameSession.fromMap(
           waitingSessions.docs.first.data(),
         );
+        final expireTime = session.expireTime;
+        final currentTime = await getServerTime();
+
+        if (expireTime != null) {
+          final isSessionAlive = currentTime!.isBefore(
+            expireTime,
+          );
+          if (isSessionAlive) {
+            return session;
+          }
+        }
+        return null;
       } catch (_) {}
     }
     return null;
@@ -118,16 +133,23 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           final sessionData = sessionDoc.data();
           if (sessionData != null && sessionData.isNotEmpty) {
             var session = GameSession.fromMap(sessionData);
-            if ((session.playerIds?.length ?? 0) >= 2) {
-            } else {
-              session
-                ..gameStatus = GameStatus.started.name
-                ..playerIds?.add(playerId);
-              transaction.update(sessionDoc.reference, {
-                'playerIds': FieldValue.arrayUnion([playerId]),
-                'gameStatus': GameStatus.started.name,
-              });
-              return session;
+            final expireTime = session.expireTime;
+            final currentTime = await getServerTime();
+            if (expireTime != null) {
+              final isSessionAlive = currentTime!.isBefore(
+                expireTime,
+              );
+              if ((session.playerIds?.length ?? 0) >= 2) {
+              } else if (isSessionAlive) {
+                session
+                  ..gameStatus = GameStatus.started.name
+                  ..playerIds?.add(playerId);
+                transaction.update(sessionDoc.reference, {
+                  'playerIds': FieldValue.arrayUnion([playerId]),
+                  'gameStatus': GameStatus.started.name,
+                });
+                return session;
+              }
             }
           }
         }
@@ -147,12 +169,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<GameSession> _createGameSession(
     String playerId,
   ) async {
+    print("Create");
     final sessionId =
         FirebaseFirestore.instance.collection('gameSessions').doc().id;
     final gameSession = GameSession(
       sessionId: sessionId,
       playerIds: [playerId],
       isActive: true,
+      expireTime: await calculateGameExpiration(),
       gameStatus: GameStatus.waiting.name,
     );
 
@@ -168,5 +192,39 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> close() {
     _userSubscription?.cancel();
     return super.close();
+  }
+
+  Future<DateTime> calculateGameExpiration() async {
+    DateTime? serverTime = await getServerTime();
+    return serverTime!.add(
+      const Duration(
+        milliseconds: AppUtils.gameSessionExpirationTimeInMills,
+      ),
+    );
+  }
+
+  Future<DateTime?> getServerTime() async {
+    try {
+      // Step 1: Write the temporary document with the server timestamp
+      final DocumentReference tempDoc =
+          _fireStoreInstance.collection('temp').doc('tempDoc');
+      await tempDoc.set({'timestamp': FieldValue.serverTimestamp()});
+
+      // Step 2: Read the document
+      DocumentSnapshot snapshot = await tempDoc.get();
+
+      // Step 3: Retrieve the server timestamp
+      Timestamp serverTimestamp = snapshot.get('timestamp');
+
+      // Step 4: Delete the temporary document
+      await tempDoc.delete();
+
+      // Step 5: Convert the server timestamp to DateTime and return it
+      return serverTimestamp.toDate();
+    } catch (e, stackTrace) {
+      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid}");
+      print("Stack Trace :: $stackTrace");
+    }
+    return null;
   }
 }

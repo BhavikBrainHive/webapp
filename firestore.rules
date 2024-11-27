@@ -3,34 +3,41 @@ rules_version = '2';
 service cloud.firestore {
     match /databases/{database}/documents {
         match /gameSessions/{sessionId} {
+            // Allow reads for authenticated users
             allow read: if request.auth != null;
+
+            // Allow writes (create or update) for authenticated users
             allow write: if request.auth != null &&
                     (
-                    // Adding players: Only allow adding to `playerIds` if fewer than 2 players exist
-                        (
-                            request.resource.data.playerIds != resource.data.playerIds &&
-                                resource.data.playerIds.size() < 2 &&
-                                resource.data.gameStatus == 'waiting'
-                        ) ||
-                        // Updating scores: Only allow if `scores` field is being modified
+                    // Case 1: Creating a new session (no existing document)
+                        !exists(/databases/$(database)/documents/gameSessions/$(sessionId)) ||
+                        // Case 2: Updating playerIds: Only allow if fewer than 2 players exist
                             (
-                                request.resource.data.scores != resource.data.scores
+                                request.resource.data.playerIds != resource.data.playerIds &&
+                                    resource.data.playerIds.size() < 2
                             ) ||
-                        // Updating gameStatus: Only allow the host or players to change `gameStatus`
+                            request.auth.uid in resource.data.playerIds &&
+                                (
+                                // Allow updating playerReady for the authenticated player
+                                    request.resource.data.playerReady[request.auth.uid] != resource.data.playerReady[request.auth.uid] ||
+                                    // Allow updating lastReady only for the authenticated player
+                                        request.resource.data.lastReady == request.auth.uid
+                                ) ||
+                        // Case 3: Other fields like scores, gameStatus, startTime, and expireTime
                             (
-                                request.auth.uid in resource.data.playerIds &&
-                                    request.resource.data.gameStatus != resource.data.gameStatus
-                            ) ||
-                        // Updating startTime: Only allow if the game is active
-                            (
-                                request.resource.data.startTime != resource.data.startTime &&
-                                    resource.data.isActive == true
+                                request.resource.data.scores != resource.data.scores ||
+                                    request.resource.data.gameStatus != resource.data.gameStatus ||
+                                    request.resource.data.startTime != resource.data.startTime ||
+                                    request.resource.data.expireTime != resource.data.expireTime
                             )
                     );
         }
 
         match /users/{uid} {
             allow read, write: if request.auth != null;
+        }
+        match /temp/{docId} {
+            allow create, read, delete: if request.auth != null;
         }
     }
 }
