@@ -38,7 +38,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     Emitter<LobbyState> emit,
   ) async {
     final currentUser = _fireAuthInstance.currentUser;
-    final sessionSnapshot = FirebaseFirestore.instance
+    final sessionSnapshot = _fireStoreInstance
         .collection('gameSessions')
         .doc(sessionId)
         .snapshots();
@@ -93,9 +93,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
                   player1Ready &&
                   player2Ready) {
                 await _gameSessionSubscription?.cancel();
-                if (currentUser.uid == gameSession.lastReady!) {
-
-                }
+                if (currentUser.uid == gameSession.lastReady!) {}
                 _startTheGamePlay();
               }
             }
@@ -110,7 +108,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   }
 
   void _startTheGamePlay() {
-
+//save the game timer to db, and starttime
   }
 
   Future<UserProfile> _getOpponentPlayer(
