@@ -16,6 +16,16 @@ class StartTimerEvent extends GameplayEvent {
   final int duration;
 
   StartTimerEvent(
-      this.duration,
-      );
+    this.duration,
+  );
 }
+
+class TimerTickEvent extends GameplayEvent {
+  final int remainingTime;
+
+  TimerTickEvent(
+    this.remainingTime,
+  );
+}
+
+class OnHitTapEvent extends GameplayEvent {}
