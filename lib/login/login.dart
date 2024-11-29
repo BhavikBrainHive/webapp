@@ -44,6 +44,7 @@ class LoginScreen extends StatelessWidget {
 
   Future<User?> signInWithGoogle() async {
     // Trigger the authentication flow
+    FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     final GoogleSignInAccount? googleUser = await GoogleSignIn(
       scopes: ['email', 'profile'],
       clientId:
@@ -64,7 +65,7 @@ class LoginScreen extends StatelessWidget {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-
+    FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     // Sign in to Firebase with the credential
     final UserCredential userCredential =
         await FirebaseAuth.instance.signInWithCredential(credential);

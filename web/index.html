@@ -35,6 +35,11 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<script>
+  if (!window.crossOriginIsolated) {
+    console.warn("Browser not cross-origin isolated. Enabling polyfills.");
+  }
+</script>
   <script src="flutter_bootstrap.js" async></script>
 <!--  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>-->
   <script type="module">
