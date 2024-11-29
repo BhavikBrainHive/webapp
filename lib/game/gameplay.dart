@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:neon_widgets/neon_widgets.dart';
 import 'package:webapp/game/bloc/gameplay_bloc.dart';
 import 'package:webapp/game/bloc/gameplay_event.dart';
 import 'package:webapp/game/bloc/gameplay_state.dart';
@@ -19,11 +21,13 @@ class _GameplayState extends State<Gameplay> {
   Future<void> didChangeDependencies() async {
     if (_gameplayBloc == null) {
       final gameArgs =
-          ModalRoute.of(context)?.settings.arguments as GameSession;
+          ModalRoute.of(context)?.settings.arguments as GameSession?;
       _gameplayBloc ??= BlocProvider.of<GameplayBloc>(context);
       _gameplayBloc?.add(
         GameplayInitialEvent(
-          gameSession: gameArgs,
+          gameSession: GameSession(
+            sessionId: 'mpskrouehuiFof9YjmmD',
+          ),
         ),
       );
     }
@@ -44,7 +48,7 @@ class _GameplayState extends State<Gameplay> {
                   BlocBuilder<GameplayBloc, GameplayState>(
                     buildWhen: (_, current) =>
                         current is TimerRunningState ||
-                        current is TimerCompleteState,
+                        current is GameCompleteState,
                     builder: (_, state) {
                       final remainingTime =
                           state is TimerRunningState ? state.remainingTime : 0;
@@ -113,6 +117,122 @@ class _GameplayState extends State<Gameplay> {
                   );
                 }
                 return const SizedBox();
+              },
+            ),
+            BlocBuilder<GameplayBloc, GameplayState>(
+              buildWhen: (_, current) => current is GameCompleteState,
+              builder: (_, state) {
+                final shouldShow = state is GameCompleteState;
+                String? player1Name = shouldShow ? state.player1Name : '';
+                String? player2Name = shouldShow ? state.player2Name : '';
+                int player1Score = shouldShow ? state.player1Score : 0;
+                int player2Score = shouldShow ? state.player2Score : 0;
+                return AbsorbPointer(
+                  absorbing: shouldShow,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(
+                      milliseconds: 500,
+                    ),
+                    switchInCurve: Curves.elasticIn,
+                    switchOutCurve: Curves.elasticIn,
+                    child: shouldShow
+                        ? Center(
+                            child: FlickerNeonContainer(
+                              flickerTimeInMilliSeconds: 0,
+                              lightSpreadRadius: 10,
+                              lightBlurRadius: 20,
+                              borderRadius: BorderRadius.circular(10),
+                              padding: EdgeInsets.symmetric(
+                                horizontal:
+                                    MediaQuery.sizeOf(context).width / 5,
+                                vertical: 20,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Lottie.asset(
+                                    'assets/animation/gameover.json',
+                                    height: 150,
+                                    width: 150,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  FlickerNeonText(
+                                    text: 'Result',
+                                    flickerTimeInMilliSeconds: 0,
+                                    textColor: Colors.white,
+                                    spreadColor: Colors.white,
+                                    blurRadius: 10,
+                                    textSize: 35,
+                                  ),
+                                  SizedBox(
+                                    height: 30,
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '$player1Name\n$player1Score',
+                                        style: TextStyle(
+                                            fontSize: 20, color: Colors.white),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      SizedBox(
+                                        width: 15,
+                                      ),
+                                      Text(
+                                        '$player2Name\n$player2Score',
+                                        style: TextStyle(
+                                            fontSize: 20, color: Colors.white),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: 25,
+                                  ),
+                                  Material(
+                                    type: MaterialType.transparency,
+                                    child: FlickerNeonContainer(
+                                      flickerTimeInMilliSeconds: 0,
+                                      borderRadius: BorderRadius.circular(7),
+                                      lightSpreadRadius: 0,
+                                      lightBlurRadius: 0,
+                                      borderWidth: 0.7,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(7),
+                                          onTap: () {
+                                            Navigator.pushNamedAndRemoveUntil(
+                                              context,
+                                              '/home',
+                                              (Route<dynamic> route) => false,
+                                            );
+                                          },
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 15,
+                                              vertical: 10,
+                                            ),
+                                            child: Text(
+                                              'Go to home',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : const SizedBox(),
+                  ),
+                );
               },
             ),
           ],

@@ -110,7 +110,7 @@ class Home extends StatelessWidget {
         );
       } else if (gameSession.gameStatus == GameStatus.started.name ||
           gameSession.gameStatus == GameStatus.waiting.name) {
-        Navigator.pushNamed(
+        Navigator.pushReplacementNamed(
           context,
           '/lobby',
           arguments: gameSession,

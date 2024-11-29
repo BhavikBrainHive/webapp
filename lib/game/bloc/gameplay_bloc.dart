@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/model/game_session.dart';
+import 'package:webapp/model/user.dart';
 import 'gameplay_event.dart';
 import 'gameplay_state.dart';
 
@@ -112,8 +113,35 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
                   .doc(_gameSession.sessionId)
                   .get();
               _gameSession = GameSession.fromMap(sessionSnapshot.data()!);
+              final player1Id = _gameSession.playerIds!.first!;
+              final player2Id = (_gameSession.playerIds!.length ?? 0) > 1
+                  ? _gameSession.playerIds!.last!
+                  : null;
+              final player1score = _gameSession.scores?[player1Id] ?? 0;
+              final player2score = _gameSession.scores?[player2Id] ?? 0;
+              final player1Snapshot = await _fireStoreInstance
+                  .collection('users')
+                  .doc(player1Id)
+                  .get();
+              final player1 = UserProfile.fromMap(player1Snapshot.data()!);
+              final player2Snapshot = await _fireStoreInstance
+                  .collection('users')
+                  .doc(player2Id)
+                  .get();
+              final player2 = UserProfile.fromMap(player2Snapshot.data()!);
+
               //determine winner
               final result = _determineWinner();
+              emit(
+                GameCompleteState(
+                  player1Name: player1.name,
+                  player2Name: player2.name,
+                  player1Score: player1score,
+                  player2Score: player2score,
+                  isDraw: result == 'draw',
+                  isWinner: result == _currentUser.uid,
+                ),
+              );
             }
           }
         } else {

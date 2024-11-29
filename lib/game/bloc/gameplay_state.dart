@@ -10,7 +10,23 @@ class TimerRunningState extends GameplayState {
   });
 }
 
-class TimerCompleteState extends GameplayState {}
+class GameCompleteState extends GameplayState {
+  final String player1Name;
+  final String player2Name;
+  final int player1Score;
+  final int player2Score;
+  final bool isWinner;
+  final bool isDraw;
+
+  GameCompleteState({
+    required this.player1Name,
+    required this.player2Name,
+    required this.player1Score,
+    required this.player2Score,
+    required this.isWinner,
+    required this.isDraw,
+  });
+}
 
 class OnScoreChangeState extends GameplayState {
   final int score;
