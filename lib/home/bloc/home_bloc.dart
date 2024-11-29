@@ -200,7 +200,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               () => FieldValue.serverTimestamp(),
             ),
         );
-
+    print("Game created:: ${gameSession.sessionId}");
     return gameSession;
   }
 

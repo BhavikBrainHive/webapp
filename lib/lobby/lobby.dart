@@ -9,39 +9,6 @@ import 'package:webapp/lobby/bloc/lobby_event.dart';
 import 'package:webapp/lobby/bloc/lobby_state.dart';
 import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
-/*
-class Lobby extends StatefulWidget {
-  const Lobby({super.key});
-
-  @override
-  State<Lobby> createState() => _LobbyState();
-}
-
-class _LobbyState extends State<Lobby> {
-  LobbyBloc? _lobbyBloc;
-
-  @override
-  Future<void> didChangeDependencies() async {
-    if (_lobbyBloc == null) {
-      final gameArgs =
-          ModalRoute.of(context)?.settings.arguments as GameSession?;
-      _lobbyBloc ??= BlocProvider.of<LobbyBloc>(context);
-      _lobbyBloc?.add(
-        LobbyInitialEvent(
-          gameSession: GameSession(
-            sessionId: 'mpskrouehuiFof9YjmmD',
-          ),
-        ),
-      );
-    }
-    super.didChangeDependencies();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold();
-  }
-}*/
 
 class Lobby extends StatefulWidget {
   const Lobby({Key? key}) : super(key: key);
@@ -57,13 +24,11 @@ class _LobbyState extends State<Lobby> {
   Future<void> didChangeDependencies() async {
     if (_lobbyBloc == null) {
       final gameArgs =
-          ModalRoute.of(context)?.settings.arguments as GameSession?;
+          ModalRoute.of(context)?.settings.arguments as GameSession;
       _lobbyBloc ??= BlocProvider.of<LobbyBloc>(context);
       _lobbyBloc?.add(
         LobbyInitialEvent(
-          gameSession: GameSession(
-            sessionId: 'mpskrouehuiFof9YjmmD',
-          ),
+          gameSession: gameArgs,
         ),
       );
     }
@@ -75,116 +40,129 @@ class _LobbyState extends State<Lobby> {
     return Scaffold(
       body: PopScope(
         canPop: false,
-        child: Stack(
-          children: [
-            Center(
-              child: BlocBuilder<LobbyBloc, LobbyState>(
-                buildWhen: (_, current) => current is LobbyPlayerUpdatedState,
-                builder: (_, state) {
-                  UserProfile? player1, player2;
-                  bool player1Ready = false, player2Ready = false;
-                  bool isReady = false;
-                  final currentUserId = state is LobbyPlayerUpdatedState
-                      ? state.currentPlayerId
-                      : FirebaseAuth.instance.currentUser?.uid;
-                  if (state is LobbyPlayerUpdatedState) {
-                    player1 = state.player1;
-                    player2 = state.player2;
-                    player1Ready = state.isPlayer1Ready;
-                    player2Ready = state.isPlayer2Ready;
-                    isReady = currentUserId == player1?.uid
-                        ? player1Ready
-                        : currentUserId == player2?.uid
-                            ? player2Ready
-                            : false;
-                  }
-                  print("\nState $state\n$player1\n$isReady");
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (player2 != null)
-                        const Text(
-                          'Match Found!',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      if (player2 != null)
-                        const SizedBox(
-                          height: 20,
-                        ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildPlayerCard(
-                            player1,
-                            player1Ready,
-                            currentUserId,
-                          ),
-                          _buildPlayerCard(
-                            player2,
-                            player2Ready,
-                            currentUserId,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      if (!player1Ready || !player2Ready)
-                        ElevatedButton(
-                          onPressed: () => _lobbyBloc?.add(
-                            LobbyPlayerReadyEvent(
-                              !isReady,
+        child: BlocListener<LobbyBloc, LobbyState>(
+          listenWhen: (_, current) => current is OnPlayerReadyState,
+          listener: (_, state) {
+            if (state is OnPlayerReadyState) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/gamePlay',
+                arguments: state.session,
+              );
+            }
+          },
+          child: Stack(
+            children: [
+              Center(
+                child: BlocBuilder<LobbyBloc, LobbyState>(
+                  buildWhen: (_, current) => current is LobbyPlayerUpdatedState,
+                  builder: (_, state) {
+                    UserProfile? player1, player2;
+                    bool player1Ready = false, player2Ready = false;
+                    bool isReady = false;
+                    final currentUserId = state is LobbyPlayerUpdatedState
+                        ? state.currentPlayerId
+                        : FirebaseAuth.instance.currentUser?.uid;
+                    if (state is LobbyPlayerUpdatedState) {
+                      player1 = state.player1;
+                      player2 = state.player2;
+                      player1Ready = state.isPlayer1Ready;
+                      player2Ready = state.isPlayer2Ready;
+                      isReady = currentUserId == player1?.uid
+                          ? player1Ready
+                          : currentUserId == player2?.uid
+                              ? player2Ready
+                              : false;
+                    }
+                    print("\nState $state\n$player2\n$isReady");
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (player2 != null)
+                          const Text(
+                            'Match Found!',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: Text(
-                            isReady ? 'Cancel Ready' : 'Ready',
+                        if (player2 != null)
+                          const SizedBox(
+                            height: 20,
                           ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildPlayerCard(
+                              player1,
+                              player1Ready,
+                              currentUserId,
+                            ),
+                            _buildPlayerCard(
+                              player2,
+                              player2Ready,
+                              currentUserId,
+                            ),
+                          ],
                         ),
-                      if (!player1Ready || !player2Ready)
                         const SizedBox(
                           height: 20,
                         ),
-                      if (player1Ready && player2Ready)
-                        const Text(
-                          'Game Starting!',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                        if (!player1Ready || !player2Ready)
+                          ElevatedButton(
+                            onPressed: () => _lobbyBloc?.add(
+                              LobbyPlayerReadyEvent(
+                                !isReady,
+                              ),
+                            ),
+                            child: Text(
+                              isReady ? 'Cancel Ready' : 'Ready',
+                            ),
                           ),
-                        )
-                      else
-                        const Text(
-                          'Waiting for all players to be ready...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
+                        if (!player1Ready || !player2Ready)
+                          const SizedBox(
+                            height: 20,
                           ),
-                        ),
-                    ],
-                  );
+                        if (player1Ready && player2Ready)
+                          const Text(
+                            'Game Starting!',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          )
+                        else
+                          const Text(
+                            'Waiting for all players to be ready...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              BlocBuilder<LobbyBloc, LobbyState>(
+                buildWhen: (_, current) => current is LobbyLoadingState,
+                builder: (_, state) {
+                  final isLoading =
+                      state is LobbyLoadingState && state.isLoading;
+                  if (isLoading) {
+                    return AbsorbPointer(
+                      absorbing: isLoading,
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
                 },
               ),
-            ),
-            BlocBuilder<LobbyBloc, LobbyState>(
-              buildWhen: (_, current) => current is LobbyLoadingState,
-              builder: (_, state) {
-                final isLoading = state is LobbyLoadingState && state.isLoading;
-                if (isLoading) {
-                  return AbsorbPointer(
-                    absorbing: isLoading,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

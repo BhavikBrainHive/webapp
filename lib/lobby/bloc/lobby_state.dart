@@ -1,3 +1,4 @@
+import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
 
 abstract class LobbyState {}
@@ -24,4 +25,10 @@ class LobbyLoadingState extends LobbyState {
   LobbyLoadingState({
     this.isLoading = true,
   });
+}
+
+class OnPlayerReadyState extends LobbyState {
+  final GameSession session;
+
+  OnPlayerReadyState(this.session);
 }

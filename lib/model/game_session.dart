@@ -36,7 +36,6 @@ class GameSession {
       'gameStatus': gameStatus,
       'startTime': startTime?.toUtc(),
       'expireTime': expireTime?.toUtc(),
-      'timestamp': timestamp,
     };
   }
 

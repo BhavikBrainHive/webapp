@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
 import 'lobby_state.dart';
@@ -44,6 +45,8 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
         .snapshots();
     _gameSessionSubscription = sessionSnapshot.listen(
       (snapshot) async {
+        debugPrint(
+            'snapshot:: $sessionId ${snapshot} ${_fireAuthInstance.currentUser?.uid}');
         if (snapshot.exists &&
             snapshot.data() != null &&
             snapshot.data()!.isNotEmpty) {
@@ -54,6 +57,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
             final player2Id = (gameSession.playerIds?.length ?? 0) > 1
                 ? gameSession.playerIds?.last
                 : null;
+            debugPrint('Player2:: ${gameSession.playerIds}');
             UserProfile? _player1, _player2;
             bool _player1Ready = player1Id != null &&
                     (gameSession.playerReady?[player1Id] ?? false),
@@ -93,8 +97,18 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
                   player1Ready &&
                   player2Ready) {
                 await _gameSessionSubscription?.cancel();
-                if (currentUser.uid == gameSession.lastReady!) {}
+                if (currentUser.uid == gameSession.lastReady!) {
+                  await _fireStoreInstance
+                      .collection('gameSessions')
+                      .doc(gameSession.sessionId)
+                      .update({
+                    'gameStatus': GameStatus.started.name,
+                  }).then((_) {
+                    gameSession.gameStatus = GameStatus.started.name;
+                  });
+                }
                 _startTheGamePlay();
+                emit(OnPlayerReadyState(gameSession));
               }
             }
           } catch (e, stackTrace) {
@@ -107,9 +121,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     );
   }
 
-  void _startTheGamePlay() {
-//save the game timer to db, and starttime
-  }
+  void _startTheGamePlay() {}
 
   Future<UserProfile> _getOpponentPlayer(
     String playerId,

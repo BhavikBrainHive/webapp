@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webapp/firebase_options.dart';
+import 'package:webapp/game/bloc/gameplay_bloc.dart';
 import 'package:webapp/game/gameplay.dart';
 import 'package:webapp/home/home.dart';
 import 'package:webapp/lobby/bloc/lobby_bloc.dart';
@@ -15,6 +17,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ); // Initialize Firebase
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false, // Disable offline persistence
+  );
+
   runApp(MyApp());
 }
 
@@ -26,10 +32,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      initialRoute: '/gamePlay',
+      initialRoute: '/login',
       routes: {
-        '/login': (context) => const LoginScreen(),
-        '/gamePlay': (context) => Gameplay(),
+        '/login': (_) => const LoginScreen(),
+        '/gamePlay': (_) => BlocProvider<GameplayBloc>(
+              create: (_) => GameplayBloc(),
+              child: const Gameplay(),
+            ),
         '/home': (_) => BlocProvider<HomeBloc>(
               create: (_) => HomeBloc(),
               child: const Home(),

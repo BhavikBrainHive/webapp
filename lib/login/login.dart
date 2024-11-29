@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/model/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -35,6 +36,7 @@ class LoginScreen extends StatelessWidget {
       name: user.displayName ?? 'Anonymous',
       email: user.email ?? '',
       photoUrl: user.photoURL,
+      wallet: AppUtils.loginWalletPoints,
     );
 
     await userDoc.set(userProfile.toMap(), SetOptions(merge: true));
