@@ -1,4 +1,5 @@
 import 'dart:js_interop';
+import 'dart:html' as html;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,16 +22,29 @@ class _LobbyState extends State<Lobby> {
   LobbyBloc? _lobbyBloc;
 
   @override
+  void initState() {
+    super.initState();
+    html.window.onBeforeUnload.listen((html.Event event) {
+      event.preventDefault();
+      (event as html.BeforeUnloadEvent).returnValue = 'Goiing to reload'; // Prompts the user before reloading
+    });
+  }
+
+  @override
   Future<void> didChangeDependencies() async {
     if (_lobbyBloc == null) {
       final gameArgs =
-          ModalRoute.of(context)?.settings.arguments as GameSession;
+          ModalRoute.of(context)?.settings.arguments as GameSession?;
       _lobbyBloc ??= BlocProvider.of<LobbyBloc>(context);
-      _lobbyBloc?.add(
-        LobbyInitialEvent(
-          gameSession: gameArgs,
-        ),
-      );
+      if (gameArgs != null) {
+        _lobbyBloc?.add(
+          LobbyInitialEvent(
+            gameSession: gameArgs,
+          ),
+        );
+      } else {
+        _lobbyBloc?.add(LobbyReloadEvent());
+      }
     }
     super.didChangeDependencies();
   }
@@ -74,7 +88,6 @@ class _LobbyState extends State<Lobby> {
                               ? player2Ready
                               : false;
                     }
-                    print("\nState $state\n$player2\n$isReady");
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -109,15 +122,33 @@ class _LobbyState extends State<Lobby> {
                           height: 20,
                         ),
                         if (!player1Ready || !player2Ready)
-                          ElevatedButton(
-                            onPressed: () => _lobbyBloc?.add(
-                              LobbyPlayerReadyEvent(
-                                !isReady,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () => _lobbyBloc?.add(
+                                  LobbyPlayerReadyEvent(
+                                    !isReady,
+                                  ),
+                                ),
+                                child: Text(
+                                  isReady ? 'Cancel Ready' : 'Ready',
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              isReady ? 'Cancel Ready' : 'Ready',
-                            ),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              ElevatedButton(
+                                onPressed: () => _lobbyBloc?.add(
+                                  LobbyPlayerReadyEvent(
+                                    !isReady,
+                                  ),
+                                ),
+                                child: Text(
+                                  isReady ? 'Cancel Ready' : 'Ready',
+                                ),
+                              ),
+                            ],
                           ),
                         if (!player1Ready || !player2Ready)
                           const SizedBox(
@@ -179,8 +210,11 @@ class _LobbyState extends State<Lobby> {
       children: [
         CircleAvatar(
           radius: 30,
-          backgroundImage:
-              player?.photoUrl != null ? NetworkImage(player!.photoUrl!) : null,
+          backgroundImage: player?.photoUrl != null
+              ? NetworkImage(
+                  player!.photoUrl!,
+                )
+              : null,
           child: player?.photoUrl == null
               ? const Icon(
                   Icons.person,
@@ -188,13 +222,28 @@ class _LobbyState extends State<Lobby> {
                 )
               : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(
+          height: 10,
+        ),
         Text(
-            player?.name ??
-                (isCurrentPlayer ? 'Loading...' : 'Waiting for Player'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(isReady ? 'Ready' : 'Not Ready'),
+          player?.name ??
+              (isCurrentPlayer ? 'Loading...' : 'Waiting for Player'),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          isReady ? 'Ready' : 'Not Ready',
+        ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _lobbyBloc?.add(
+      OnDestroyEvent(),
+    );
+    super.dispose();
   }
 }

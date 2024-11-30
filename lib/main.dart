@@ -30,29 +30,33 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      initialRoute: '/login',
-      routes: {
-        '/login': (_) => const LoginScreen(),
-        '/gamePlay': (_) => BlocProvider<GameplayBloc>(
-              create: (_) => GameplayBloc(),
-              child: const Gameplay(),
-            ),
-        '/home': (_) => BlocProvider<HomeBloc>(
-              create: (_) => HomeBloc(),
-              child: const Home(),
-            ),
-        '/lobby': (_) => BlocProvider<LobbyBloc>(
-              create: (_) => LobbyBloc(),
-              child: const Lobby(),
-            ),
-      },
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<LobbyBloc>(
+          create: (_) => LobbyBloc(),
+        )
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        initialRoute: '/login',
+        routes: {
+          '/login': (_) => const LoginScreen(),
+          '/gamePlay': (_) => BlocProvider<GameplayBloc>(
+                create: (_) => GameplayBloc(),
+                child: const Gameplay(),
+              ),
+          '/home': (_) => BlocProvider<HomeBloc>(
+                create: (_) => HomeBloc(),
+                child: const Home(),
+              ),
+          '/lobby': (_) => const Lobby(),
+        },
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
       ),
     );
   }

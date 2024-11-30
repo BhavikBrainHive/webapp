@@ -10,6 +10,12 @@ class LobbyInitialEvent extends LobbyEvent {
   });
 }
 
+class LobbyReloadEvent extends LobbyEvent {
+}
+
+class OnDestroyEvent extends LobbyEvent {
+}
+
 class LobbyPlayerReadyEvent extends LobbyEvent{
   final bool isReady;
 

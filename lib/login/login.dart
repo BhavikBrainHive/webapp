@@ -1,12 +1,56 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/model/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
+
+    FirebaseAuth.instance.authStateChanges().listen((onData) {
+      print("Auth changes:: $onData");
+    });
+    // _handleRedirect();
+  }
+
+  /// Handles the redirect result after signing in with Google
+  Future<void> _handleRedirect() async {
+    final UserCredential userCredential =
+        await FirebaseAuth.instance.getRedirectResult();
+    if (userCredential.user != null) {
+      // User signed in successfully
+      await createUserProfile(userCredential.user!);
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+  }
+
+  /// Sign in with Google using redirect-based authentication
+  Future<void> _signInWithGoogle() async {
+    try {
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      // Initiates the sign-in process
+      await FirebaseAuth.instance.signInWithRedirect(googleProvider);
+    } catch (e) {
+      print('Error during Google Sign-In: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +88,7 @@ class LoginScreen extends StatelessWidget {
 
   Future<User?> signInWithGoogle() async {
     // Trigger the authentication flow
-    FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    // FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     final GoogleSignInAccount? googleUser = await GoogleSignIn(
       scopes: ['email', 'profile'],
       clientId:
@@ -65,11 +109,12 @@ class LoginScreen extends StatelessWidget {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-    FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    // FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     // Sign in to Firebase with the credential
-    final UserCredential userCredential =
+    final userCredential =
         await FirebaseAuth.instance.signInWithCredential(credential);
 
+// print('login res: ${userCredential.user?.uid}');
     return userCredential.user;
   }
 }

@@ -53,6 +53,7 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
       (snapshot) async {
         final data = snapshot.data();
         if (snapshot.exists && data != null && data.isNotEmpty) {
+          print(snapshot.id);
           _gameSession = GameSession.fromMap(data);
           final score = _gameSession.scores?[_currentUser.uid] ?? 0;
           final startTime = _gameSession.startTime;
@@ -84,7 +85,6 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
               );
             } else {
               //startTimer
-              emit(GameplayLoadingState(isLoading: false));
               if (_startTime == null ||
                   _startTime!.compareTo(startTime) != 0 ||
                   (_timer?.isActive ?? false) == false) {
@@ -101,11 +101,13 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
                     1000;
                 int timeLeft = endTime - currentTime;
                 _timer?.cancel();
+                emit(GameplayLoadingState(isLoading: false));
                 add(StartTimerEvent(timeLeft));
+              } else {
+                emit(GameplayLoadingState(isLoading: false));
               }
             }
           } else {
-            emit(GameplayLoadingState(isLoading: false));
             if (_gameSession.gameStatus == GameStatus.finished.name) {
               await _gameSessionSubscription?.cancel();
               final sessionSnapshot = await _fireStoreInstance
@@ -132,6 +134,7 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
 
               //determine winner
               final result = _determineWinner();
+              emit(GameplayLoadingState(isLoading: false));
               emit(
                 GameCompleteState(
                   player1Name: player1.name,
@@ -142,6 +145,8 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
                   isWinner: result == _currentUser.uid,
                 ),
               );
+            } else {
+              emit(GameplayLoadingState(isLoading: false));
             }
           }
         } else {
@@ -204,16 +209,21 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
       ),
     );
     if (event.remainingTime == 0) {
-      await _onGameplayEnd();
+      await _onGameplayEnd(emit);
       //save last score and s=change game status to finished
     }
   }
 
-  Future<void> _onGameplayEnd() async {
+  Future<void> _onGameplayEnd(
+    Emitter<GameplayState> emit,
+  ) async {
+    emit(GameplayLoadingState());
     _scoreTimer?.cancel();
+    await Future.delayed(Duration(seconds: 2));
     await _updateScoreInTransaction(
       forceUpdate: true,
     );
+    await Future.delayed(Duration(seconds: 1));
     await _fireStoreInstance
         .collection('gameSessions')
         .doc(_gameSession.sessionId)
@@ -310,6 +320,9 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
   @override
   Future<void> close() async {
     _timer?.cancel();
+    await _updateScoreInTransaction(
+      forceUpdate: true,
+    );
     await _gameSessionSubscription?.cancel();
     return super.close();
   }

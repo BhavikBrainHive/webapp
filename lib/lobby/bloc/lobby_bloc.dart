@@ -11,18 +11,20 @@ import 'lobby_state.dart';
 import 'lobby_event.dart';
 
 class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
-  late String sessionId;
+  late String _sessionId;
   static final _fireStoreInstance = FirebaseFirestore.instance;
   final _fireAuthInstance = FirebaseAuth.instance;
   UserProfile? player1, player2;
   bool player1Ready = false, player2Ready = false;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _gameSessionSubscription;
-  late GameSession gameSession;
+  GameSession? _gameSession;
 
   LobbyBloc() : super(LobbyInitialState()) {
     on<LobbyInitialEvent>(_init);
     on<LobbyPlayerReadyEvent>(_updateReadyStatus);
+    on<LobbyReloadEvent>(_onReload);
+    on<OnDestroyEvent>(_onDestroy);
   }
 
   Future<void> _init(
@@ -30,9 +32,23 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     Emitter<LobbyState> emit,
   ) async {
     emit(LobbyLoadingState());
-    sessionId = event.gameSession.sessionId;
+    _gameSession = event.gameSession;
+    _sessionId = _gameSession!.sessionId;
     await _listenToGameSessionChanges(emit);
     await _gameSessionSubscription?.asFuture();
+  }
+
+  Future<void> _onReload(
+    LobbyReloadEvent event,
+    Emitter<LobbyState> emit,
+  ) async {
+    if (_gameSession != null) {
+      add(LobbyInitialEvent(
+        gameSession: _gameSession!,
+      ));
+    } else {
+      print("Null on reload");
+    }
   }
 
   Future<void> _listenToGameSessionChanges(
@@ -41,23 +57,21 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     final currentUser = _fireAuthInstance.currentUser;
     final sessionSnapshot = _fireStoreInstance
         .collection('gameSessions')
-        .doc(sessionId)
+        .doc(_sessionId)
         .snapshots();
+    await _gameSessionSubscription?.cancel();
     _gameSessionSubscription = sessionSnapshot.listen(
       (snapshot) async {
-        debugPrint(
-            'snapshot:: $sessionId ${snapshot} ${_fireAuthInstance.currentUser?.uid}');
         if (snapshot.exists &&
             snapshot.data() != null &&
             snapshot.data()!.isNotEmpty) {
           try {
             final gameSession = GameSession.fromMap(snapshot.data()!);
-            sessionId = gameSession.sessionId;
+            _sessionId = gameSession.sessionId;
             final player1Id = gameSession.playerIds?.first;
             final player2Id = (gameSession.playerIds?.length ?? 0) > 1
                 ? gameSession.playerIds?.last
                 : null;
-            debugPrint('Player2:: ${gameSession.playerIds}');
             UserProfile? _player1, _player2;
             bool _player1Ready = player1Id != null &&
                     (gameSession.playerReady?[player1Id] ?? false),
@@ -75,14 +89,15 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
                 (_player2 != null && player2 == null) ||
                 _player1Ready != player1Ready ||
                 _player2Ready != player2Ready) {
-              if ((_player1 != null && player1 == null) ||
-                  (_player2 != null && player2 == null)) {
+              if (_player1 != null && player1 == null) {
                 player1 = _player1;
+              }
+              if (_player2 != null && player2 == null) {
                 player2 = _player2;
               }
-
               player1Ready = _player1Ready;
               player2Ready = _player2Ready;
+
               emit(
                 LobbyPlayerUpdatedState(
                   player1: player1,
@@ -139,7 +154,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     final isReady = event.isReady;
     final currentUserId = _fireAuthInstance.currentUser!.uid;
     final sessionRef =
-        _fireStoreInstance.collection('gameSessions').doc(sessionId);
+        _fireStoreInstance.collection('gameSessions').doc(_sessionId);
 
     await _fireStoreInstance.runTransaction((transaction) async {
       // Get the current session document
@@ -170,5 +185,13 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   Future<void> close() async {
     await _gameSessionSubscription?.cancel();
     return super.close();
+  }
+
+  Future<void> _onDestroy(
+    OnDestroyEvent event,
+    Emitter<LobbyState> emit,
+  ) async {
+    await _gameSessionSubscription?.cancel();
+    print("On Destroy called");
   }
 }
