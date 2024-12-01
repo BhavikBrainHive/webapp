@@ -27,6 +27,8 @@ class LobbyLoadingState extends LobbyState {
   });
 }
 
+class LobbyExitedState extends LobbyState {}
+
 class OnPlayerReadyState extends LobbyState {
   final GameSession session;
 

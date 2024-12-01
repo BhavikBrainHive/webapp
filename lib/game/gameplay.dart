@@ -125,6 +125,8 @@ class _GameplayState extends State<Gameplay> {
                 String? player2Name = shouldShow ? state.player2Name : '';
                 int player1Score = shouldShow ? state.player1Score : 0;
                 int player2Score = shouldShow ? state.player2Score : 0;
+                bool isWinner = shouldShow && state.isWinner;
+                bool isDraw = shouldShow && state.isDraw;
                 return AnimatedSwitcher(
                   duration: const Duration(
                     milliseconds: 500,
@@ -153,7 +155,11 @@ class _GameplayState extends State<Gameplay> {
                                   fit: BoxFit.contain,
                                 ),
                                 FlickerNeonText(
-                                  text: 'Result',
+                                  text: isDraw
+                                      ? r"It's Draw"
+                                      : (isWinner
+                                          ? r"You've won!!"
+                                          : r"You've lost"),
                                   flickerTimeInMilliSeconds: 0,
                                   textColor: Colors.white,
                                   spreadColor: Colors.white,

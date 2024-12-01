@@ -1,10 +1,6 @@
-import 'dart:js_interop';
-import 'dart:html' as html;
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:webapp/home/bloc/home_state.dart';
 import 'package:webapp/lobby/bloc/lobby_bloc.dart';
 import 'package:webapp/lobby/bloc/lobby_event.dart';
 import 'package:webapp/lobby/bloc/lobby_state.dart';
@@ -20,15 +16,6 @@ class Lobby extends StatefulWidget {
 
 class _LobbyState extends State<Lobby> {
   LobbyBloc? _lobbyBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    html.window.onBeforeUnload.listen((html.Event event) {
-      event.preventDefault();
-      (event as html.BeforeUnloadEvent).returnValue = 'Goiing to reload'; // Prompts the user before reloading
-    });
-  }
 
   @override
   Future<void> didChangeDependencies() async {
@@ -55,13 +42,20 @@ class _LobbyState extends State<Lobby> {
       body: PopScope(
         canPop: false,
         child: BlocListener<LobbyBloc, LobbyState>(
-          listenWhen: (_, current) => current is OnPlayerReadyState,
+          listenWhen: (_, current) =>
+              current is OnPlayerReadyState || current is LobbyExitedState,
           listener: (_, state) {
             if (state is OnPlayerReadyState) {
               Navigator.pushReplacementNamed(
                 context,
                 '/gamePlay',
                 arguments: state.session,
+              );
+            } else if (state is LobbyExitedState) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (Route<dynamic> route) => false,
               );
             }
           },
@@ -74,6 +68,7 @@ class _LobbyState extends State<Lobby> {
                     UserProfile? player1, player2;
                     bool player1Ready = false, player2Ready = false;
                     bool isReady = false;
+                    bool isAdmin = false;
                     final currentUserId = state is LobbyPlayerUpdatedState
                         ? state.currentPlayerId
                         : FirebaseAuth.instance.currentUser?.uid;
@@ -87,6 +82,7 @@ class _LobbyState extends State<Lobby> {
                           : currentUserId == player2?.uid
                               ? player2Ready
                               : false;
+                      isAdmin = currentUserId == player1?.uid;
                     }
                     return Column(
                       mainAxisSize: MainAxisSize.min,
@@ -132,20 +128,18 @@ class _LobbyState extends State<Lobby> {
                                   ),
                                 ),
                                 child: Text(
-                                  isReady ? 'Cancel Ready' : 'Ready',
+                                  isReady ? 'Cancel Ready' : 'Start Game',
                                 ),
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 width: 10,
                               ),
                               ElevatedButton(
                                 onPressed: () => _lobbyBloc?.add(
-                                  LobbyPlayerReadyEvent(
-                                    !isReady,
-                                  ),
+                                  LobbyPlayerCancelEvent(),
                                 ),
                                 child: Text(
-                                  isReady ? 'Cancel Ready' : 'Ready',
+                                  isAdmin ? 'Cancel Game' : 'Discard',
                                 ),
                               ),
                             ],

@@ -12,6 +12,7 @@ import 'lobby_event.dart';
 
 class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   late String _sessionId;
+  late User _currentUser;
   static final _fireStoreInstance = FirebaseFirestore.instance;
   final _fireAuthInstance = FirebaseAuth.instance;
   UserProfile? player1, player2;
@@ -24,6 +25,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     on<LobbyInitialEvent>(_init);
     on<LobbyPlayerReadyEvent>(_updateReadyStatus);
     on<LobbyReloadEvent>(_onReload);
+    on<LobbyPlayerCancelEvent>(_onCancel);
     on<OnDestroyEvent>(_onDestroy);
   }
 
@@ -32,6 +34,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     Emitter<LobbyState> emit,
   ) async {
     emit(LobbyLoadingState());
+    _currentUser = _fireAuthInstance.currentUser!;
     _gameSession = event.gameSession;
     _sessionId = _gameSession!.sessionId;
     await _listenToGameSessionChanges(emit);
@@ -54,7 +57,6 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   Future<void> _listenToGameSessionChanges(
     Emitter<LobbyState> emit,
   ) async {
-    final currentUser = _fireAuthInstance.currentUser;
     final sessionSnapshot = _fireStoreInstance
         .collection('gameSessions')
         .doc(_sessionId)
@@ -85,6 +87,12 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
               _player2 = await _getOpponentPlayer(player2Id);
             }
 
+            if (player2 != null && player2Id == null) {
+              await _gameSessionSubscription?.cancel();
+              emit(LobbyExitedState());
+              return;
+            }
+
             if ((_player1 != null && player1 == null) ||
                 (_player2 != null && player2 == null) ||
                 _player1Ready != player1Ready ||
@@ -102,7 +110,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
                 LobbyPlayerUpdatedState(
                   player1: player1,
                   player2: player2,
-                  currentPlayerId: currentUser!.uid,
+                  currentPlayerId: _currentUser!.uid,
                   isPlayer1Ready: player1Ready,
                   isPlayer2Ready: player2Ready,
                 ),
@@ -112,7 +120,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
                   player1Ready &&
                   player2Ready) {
                 await _gameSessionSubscription?.cancel();
-                if (currentUser.uid == gameSession.lastReady!) {
+                if (_currentUser.uid == gameSession.lastReady!) {
                   await _fireStoreInstance
                       .collection('gameSessions')
                       .doc(gameSession.sessionId)
@@ -130,6 +138,10 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
             debugPrint("Error: $e");
             debugPrint("Stacktrace: $stackTrace");
           }
+        } else {
+          await _gameSessionSubscription?.cancel();
+          emit(LobbyLoadingState(isLoading: false));
+          emit(LobbyExitedState());
         }
         emit(LobbyLoadingState(isLoading: false));
       },
@@ -137,6 +149,57 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   }
 
   void _startTheGamePlay() {}
+
+  Future<void> _onCancel(
+    LobbyPlayerCancelEvent event,
+    Emitter<LobbyState> emit,
+  ) async {
+    emit(LobbyLoadingState());
+    final sessionRef =
+        _fireStoreInstance.collection('gameSessions').doc(_sessionId);
+    await _fireStoreInstance.runTransaction((transaction) async {
+      // Get the current session document
+      DocumentSnapshot snapshot = await transaction.get(sessionRef);
+
+      if (snapshot.exists) {
+        final gameSession = GameSession.fromMap(
+          snapshot.data()! as Map<String, dynamic>,
+        );
+        final player1Id = gameSession.playerIds?.first;
+        final player2Id = (gameSession.playerIds?.length ?? 0) > 1
+            ? gameSession.playerIds?.last
+            : null;
+        bool _player1Ready = player1Id != null &&
+                (gameSession.playerReady?[player1Id] ?? false),
+            _player2Ready = player2Id != null &&
+                (gameSession.playerReady?[player2Id] ?? false);
+        final isAdmin = _currentUser.uid == player1Id;
+        if (gameSession.gameStatus != GameStatus.started.name &&
+            (!_player1Ready || !_player2Ready)) {
+          if (isAdmin) {
+            transaction.delete(sessionRef);
+          } else {
+            if (gameSession.playerIds?.contains(player2Id) == true) {
+              transaction.update(sessionRef, {
+                "playerIds": FieldValue.arrayRemove([player2Id]),
+              });
+            }
+            if (gameSession.playerReady?[player2Id] != null) {
+              transaction.update(sessionRef, {
+                "playerReady.$player2Id": FieldValue.delete(),
+              });
+            }
+            if (gameSession.scores?[player2Id] != null) {
+              transaction.update(sessionRef, {
+                "scores.$player2Id": FieldValue.delete(),
+              });
+            }
+          }
+        }
+      }
+    });
+    emit(LobbyLoadingState(isLoading: false));
+  }
 
   Future<UserProfile> _getOpponentPlayer(
     String playerId,
