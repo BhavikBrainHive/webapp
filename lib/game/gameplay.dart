@@ -6,6 +6,7 @@ import 'package:webapp/game/bloc/gameplay_bloc.dart';
 import 'package:webapp/game/bloc/gameplay_event.dart';
 import 'package:webapp/game/bloc/gameplay_state.dart';
 import 'package:webapp/model/game_session.dart';
+import 'dart:html' as html;
 
 class Gameplay extends StatefulWidget {
   const Gameplay({super.key});
@@ -16,6 +17,17 @@ class Gameplay extends StatefulWidget {
 
 class _GameplayState extends State<Gameplay> {
   GameplayBloc? _gameplayBloc;
+
+  @override
+  void initState() {
+    html.window.onBeforeUnload.listen((event) {
+      // Prevent the default behavior
+      event.preventDefault();
+      // Set a custom return value (browsers ignore custom text in modern implementations)
+      (event as html.BeforeUnloadEvent).returnValue = '';
+    });
+    super.initState();
+  }
 
   @override
   Future<void> didChangeDependencies() async {
@@ -140,7 +152,7 @@ class _GameplayState extends State<Gameplay> {
                             lightSpreadRadius: 10,
                             lightBlurRadius: 20,
                             borderRadius: BorderRadius.circular(10),
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 15,
                               vertical: 20,
                             ),
@@ -166,7 +178,7 @@ class _GameplayState extends State<Gameplay> {
                                   blurRadius: 10,
                                   textSize: 35,
                                 ),
-                                SizedBox(
+                                const SizedBox(
                                   height: 30,
                                 ),
                                 Row(
@@ -176,7 +188,9 @@ class _GameplayState extends State<Gameplay> {
                                     Text(
                                       '$player1Name\n$player1Score',
                                       style: TextStyle(
-                                          fontSize: 20, color: Colors.white),
+                                        fontSize: 20,
+                                        color: Colors.white,
+                                      ),
                                       textAlign: TextAlign.center,
                                     ),
                                     SizedBox(
@@ -185,7 +199,9 @@ class _GameplayState extends State<Gameplay> {
                                     Text(
                                       '$player2Name\n$player2Score',
                                       style: TextStyle(
-                                          fontSize: 20, color: Colors.white),
+                                        fontSize: 20,
+                                        color: Colors.white,
+                                      ),
                                       textAlign: TextAlign.center,
                                     ),
                                   ],

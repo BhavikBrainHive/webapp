@@ -25,7 +25,13 @@ class GameSession {
     this.timestamp,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({
+    bool isCache = false,
+  }) {
+    final start =
+        isCache ? startTime?.toUtc().toIso8601String() : startTime?.toUtc();
+    final expire =
+        isCache ? expireTime?.toUtc().toIso8601String() : expireTime?.toUtc();
     return {
       'sessionId': sessionId,
       'playerIds': playerIds,
@@ -34,12 +40,15 @@ class GameSession {
       'playerReady': playerReady,
       'isActive': isActive,
       'gameStatus': gameStatus,
-      'startTime': startTime?.toUtc(),
-      'expireTime': expireTime?.toUtc(),
+      'startTime': start,
+      'expireTime': expire,
     };
   }
 
-  factory GameSession.fromMap(Map<String, dynamic> map) {
+  factory GameSession.fromMap(
+    Map<String, dynamic> map, {
+    bool isCache = false,
+  }) {
     Map<String, bool>? playerReady;
     if (map['playerReady'] != null &&
         map['playerReady'] is Map<String, dynamic>) {
@@ -62,6 +71,24 @@ class GameSession {
       });
     }
 
+    final start = map['startTime'] != null
+        ? (isCache
+            ? DateTime.parse(map['startTime'])
+            : (map['startTime'] as Timestamp?)?.toDate())
+        : null;
+
+    final expire = map['expireTime'] != null
+        ? (isCache
+            ? DateTime.parse(map['expireTime'])
+            : (map['expireTime'] as Timestamp?)?.toDate())
+        : null;
+
+    final timestamp = map['timestamp'] != null
+        ? (isCache
+            ? DateTime.parse(map['timestamp'])
+            : (map['timestamp'] as Timestamp?)?.toDate())
+        : null;
+
     return GameSession(
       sessionId: map['sessionId'],
       playerIds: List<String>.from(map['playerIds']),
@@ -70,9 +97,9 @@ class GameSession {
       isActive: map['isActive'],
       lastReady: map['lastReady'],
       gameStatus: map['gameStatus'],
-      startTime: (map['startTime'] as Timestamp?)?.toDate(),
-      expireTime: (map['expireTime'] as Timestamp?)?.toDate(),
-      timestamp: (map['timestamp'] as Timestamp?)?.toDate(),
+      startTime: start,
+      expireTime: expire,
+      timestamp: timestamp,
     );
   }
 }

@@ -75,12 +75,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final userDoc =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
 
+    final userData = await userDoc.get();
+    int walletPoints = AppUtils.loginWalletPoints;
+    if (userData.exists &&
+        userData.data() != null &&
+        userData.data()!.isNotEmpty) {
+      final user = UserProfile.fromMap(userData.data()!);
+      walletPoints = walletPoints + user.wallet;
+    }
+
     final userProfile = UserProfile(
       uid: user.uid,
       name: user.displayName ?? 'Anonymous',
       email: user.email ?? '',
       photoUrl: user.photoURL,
-      wallet: AppUtils.loginWalletPoints,
+      wallet: walletPoints,
     );
 
     await userDoc.set(userProfile.toMap(), SetOptions(merge: true));

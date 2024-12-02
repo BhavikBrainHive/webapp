@@ -29,8 +29,6 @@ class _LobbyState extends State<Lobby> {
             gameSession: gameArgs,
           ),
         );
-      } else {
-        _lobbyBloc?.add(LobbyReloadEvent());
       }
     }
     super.didChangeDependencies();
@@ -52,6 +50,8 @@ class _LobbyState extends State<Lobby> {
                 arguments: state.session,
               );
             } else if (state is LobbyExitedState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Room has been cancelled!!")));
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/home',
@@ -102,15 +102,19 @@ class _LobbyState extends State<Lobby> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildPlayerCard(
-                              player1,
-                              player1Ready,
-                              currentUserId,
+                            Expanded(
+                              child: _buildPlayerCard(
+                                player1,
+                                player1Ready,
+                                currentUserId,
+                              ),
                             ),
-                            _buildPlayerCard(
-                              player2,
-                              player2Ready,
-                              currentUserId,
+                            Expanded(
+                              child: _buildPlayerCard(
+                                player2,
+                                player2Ready,
+                                currentUserId,
+                              ),
                             ),
                           ],
                         ),
@@ -225,6 +229,8 @@ class _LobbyState extends State<Lobby> {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         Text(
           isReady ? 'Ready' : 'Not Ready',

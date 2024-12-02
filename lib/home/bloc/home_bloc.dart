@@ -223,7 +223,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       // Step 1: Write the temporary document with the server timestamp
       final DocumentReference tempDoc =
-          _fireStoreInstance.collection('temp').doc('tempDoc');
+          _fireStoreInstance.collection('temp').doc(profile!.uid);
       await tempDoc.set({'timestamp': FieldValue.serverTimestamp()});
 
       // Step 2: Read the document

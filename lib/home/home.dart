@@ -72,6 +72,17 @@ class Home extends StatelessWidget {
                           'Start',
                         ),
                       ),
+                      const SizedBox(
+                        height: 15,
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/history');
+                        },
+                        child: const Text(
+                          'Game history',
+                        ),
+                      ),
                     ],
                   ),
                 ),

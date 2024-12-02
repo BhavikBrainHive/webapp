@@ -4,13 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
 import 'lobby_state.dart';
 import 'lobby_event.dart';
 
-class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
+class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
   late String _sessionId;
   late User _currentUser;
   static final _fireStoreInstance = FirebaseFirestore.instance;
@@ -24,9 +25,46 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
   LobbyBloc() : super(LobbyInitialState()) {
     on<LobbyInitialEvent>(_init);
     on<LobbyPlayerReadyEvent>(_updateReadyStatus);
-    on<LobbyReloadEvent>(_onReload);
     on<LobbyPlayerCancelEvent>(_onCancel);
     on<OnDestroyEvent>(_onDestroy);
+    if (_gameSession != null) {
+      add(LobbyInitialEvent(
+        gameSession: _gameSession!,
+      ));
+    }
+  }
+
+  @override
+  Map<String, dynamic>? toJson(LobbyState state) {
+    // Persist only `gameSession` when available
+    if (_gameSession != null) {
+      return {
+        'gameSession': _gameSession!.toMap(
+          isCache: true,
+        ),
+      };
+    }
+    return null;
+  }
+
+  @override
+  LobbyState? fromJson(Map<String, dynamic> json) {
+    try {
+      if (json.containsKey('gameSession')) {
+        _gameSession = GameSession.fromMap(
+          json['gameSession'],
+          isCache: true,
+        );
+        if (_gameSession != null) {
+          // Re-add the `LobbyInitialEvent` after restoration
+          add(LobbyInitialEvent(gameSession: _gameSession!));
+        }
+      }
+      return LobbyInitialState();
+    } catch (e) {
+      debugPrint('Error deserializing gameSession: $e');
+      return null;
+    }
   }
 
   Future<void> _init(
@@ -39,19 +77,6 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
     _sessionId = _gameSession!.sessionId;
     await _listenToGameSessionChanges(emit);
     await _gameSessionSubscription?.asFuture();
-  }
-
-  Future<void> _onReload(
-    LobbyReloadEvent event,
-    Emitter<LobbyState> emit,
-  ) async {
-    if (_gameSession != null) {
-      add(LobbyInitialEvent(
-        gameSession: _gameSession!,
-      ));
-    } else {
-      print("Null on reload");
-    }
   }
 
   Future<void> _listenToGameSessionChanges(
@@ -87,7 +112,9 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
               _player2 = await _getOpponentPlayer(player2Id);
             }
 
-            if (player2 != null && player2Id == null) {
+            if (player2 != null &&
+                player2Id == null &&
+                player2!.uid == _currentUser.uid) {
               await _gameSessionSubscription?.cancel();
               emit(LobbyExitedState());
               return;
@@ -174,8 +201,7 @@ class LobbyBloc extends Bloc<LobbyEvent, LobbyState> {
             _player2Ready = player2Id != null &&
                 (gameSession.playerReady?[player2Id] ?? false);
         final isAdmin = _currentUser.uid == player1Id;
-        if (gameSession.gameStatus != GameStatus.started.name &&
-            (!_player1Ready || !_player2Ready)) {
+        if (!_player1Ready || !_player2Ready) {
           if (isAdmin) {
             transaction.delete(sessionRef);
           } else {
