@@ -39,7 +39,9 @@ service cloud.firestore {
                                 request.resource.data.scores != resource.data.scores ||
                                     request.resource.data.gameStatus != resource.data.gameStatus ||
                                     request.resource.data.startTime != resource.data.startTime ||
-                                    request.resource.data.expireTime != resource.data.expireTime
+                                    request.resource.data.expireTime != resource.data.expireTime ||
+                                    request.resource.data.totalAmount != resource.data.totalAmount ||
+                                    request.resource.data.isActive != resource.data.isActive
                             )
                     );
         }

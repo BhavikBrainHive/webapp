@@ -41,7 +41,9 @@ class _LobbyState extends State<Lobby> {
         canPop: false,
         child: BlocListener<LobbyBloc, LobbyState>(
           listenWhen: (_, current) =>
-              current is OnPlayerReadyState || current is LobbyExitedState,
+              current is OnPlayerReadyState ||
+              current is LobbyExitedState ||
+              current is RoomExpiredState,
           listener: (_, state) {
             if (state is OnPlayerReadyState) {
               Navigator.pushReplacementNamed(
@@ -57,121 +59,159 @@ class _LobbyState extends State<Lobby> {
                 '/home',
                 (Route<dynamic> route) => false,
               );
+            } else if (state is RoomExpiredState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Your room has been expired!!")));
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (Route<dynamic> route) => false,
+              );
             }
           },
           child: Stack(
             children: [
               Center(
-                child: BlocBuilder<LobbyBloc, LobbyState>(
-                  buildWhen: (_, current) => current is LobbyPlayerUpdatedState,
-                  builder: (_, state) {
-                    UserProfile? player1, player2;
-                    bool player1Ready = false, player2Ready = false;
-                    bool isReady = false;
-                    bool isAdmin = false;
-                    final currentUserId = state is LobbyPlayerUpdatedState
-                        ? state.currentPlayerId
-                        : FirebaseAuth.instance.currentUser?.uid;
-                    if (state is LobbyPlayerUpdatedState) {
-                      player1 = state.player1;
-                      player2 = state.player2;
-                      player1Ready = state.isPlayer1Ready;
-                      player2Ready = state.isPlayer2Ready;
-                      isReady = currentUserId == player1?.uid
-                          ? player1Ready
-                          : currentUserId == player2?.uid
-                              ? player2Ready
-                              : false;
-                      isAdmin = currentUserId == player1?.uid;
-                    }
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (player2 != null)
-                          const Text(
-                            'Match Found!',
-                            style: TextStyle(
-                              fontSize: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BlocBuilder<LobbyBloc, LobbyState>(
+                      buildWhen: (_, current) =>
+                          current is TimerRunningState ||
+                          current is RoomExpiredState,
+                      builder: (_, state) {
+                        final remainingTime = state is TimerRunningState
+                            ? state.remainingTime
+                            : 0;
+                        if (remainingTime > 0) {
+                          return Text(
+                            'Room will expire in\n${formatSecondsToMMSS(remainingTime)}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
-                          ),
-                        if (player2 != null)
-                          const SizedBox(
-                            height: 20,
-                          ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    BlocBuilder<LobbyBloc, LobbyState>(
+                      buildWhen: (_, current) =>
+                          current is LobbyPlayerUpdatedState,
+                      builder: (_, state) {
+                        UserProfile? player1, player2;
+                        bool player1Ready = false, player2Ready = false;
+                        bool isReady = false;
+                        bool isAdmin = false;
+                        final currentUserId = state is LobbyPlayerUpdatedState
+                            ? state.currentPlayerId
+                            : FirebaseAuth.instance.currentUser?.uid;
+                        if (state is LobbyPlayerUpdatedState) {
+                          player1 = state.player1;
+                          player2 = state.player2;
+                          player1Ready = state.isPlayer1Ready;
+                          player2Ready = state.isPlayer2Ready;
+                          isReady = currentUserId == player1?.uid
+                              ? player1Ready
+                              : currentUserId == player2?.uid
+                                  ? player2Ready
+                                  : false;
+                          isAdmin = currentUserId == player1?.uid;
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: _buildPlayerCard(
-                                player1,
-                                player1Ready,
-                                currentUserId,
+                            if (player2 != null)
+                              const Text(
+                                'Match Found!',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              child: _buildPlayerCard(
-                                player2,
-                                player2Ready,
-                                currentUserId,
+                            if (player2 != null)
+                              const SizedBox(
+                                height: 20,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        if (!player1Ready || !player2Ready)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () => _lobbyBloc?.add(
-                                  LobbyPlayerReadyEvent(
-                                    !isReady,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: _buildPlayerCard(
+                                    player1,
+                                    player1Ready,
+                                    currentUserId,
                                   ),
                                 ),
-                                child: Text(
-                                  isReady ? 'Cancel Ready' : 'Start Game',
+                                Expanded(
+                                  child: _buildPlayerCard(
+                                    player2,
+                                    player2Ready,
+                                    currentUserId,
+                                  ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 20,
+                            ),
+                            if (!player1Ready || !player2Ready)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: () => _lobbyBloc?.add(
+                                      LobbyPlayerReadyEvent(
+                                        !isReady,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      isReady ? 'Cancel Ready' : 'Start Game',
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    width: 10,
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => _lobbyBloc?.add(
+                                      LobbyPlayerCancelEvent(),
+                                    ),
+                                    child: Text(
+                                      isAdmin ? 'Cancel Game' : 'Discard',
+                                    ),
+                                  ),
+                                ],
                               ),
+                            if (!player1Ready || !player2Ready)
                               const SizedBox(
-                                width: 10,
+                                height: 20,
                               ),
-                              ElevatedButton(
-                                onPressed: () => _lobbyBloc?.add(
-                                  LobbyPlayerCancelEvent(),
+                            if (player1Ready && player2Ready)
+                              const Text(
+                                'Game Starting!',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
                                 ),
-                                child: Text(
-                                  isAdmin ? 'Cancel Game' : 'Discard',
+                              )
+                            else
+                              const Text(
+                                'Waiting for all players to be ready...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
-                            ],
-                          ),
-                        if (!player1Ready || !player2Ready)
-                          const SizedBox(
-                            height: 20,
-                          ),
-                        if (player1Ready && player2Ready)
-                          const Text(
-                            'Game Starting!',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          )
-                        else
-                          const Text(
-                            'Waiting for all players to be ready...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
               BlocBuilder<LobbyBloc, LobbyState>(
@@ -195,6 +235,17 @@ class _LobbyState extends State<Lobby> {
         ),
       ),
     );
+  }
+
+  String formatSecondsToMMSS(int totalSeconds) {
+    int minutes = totalSeconds ~/ 60; // Calculate minutes
+    int seconds = totalSeconds % 60; // Calculate remaining seconds
+
+    if (minutes == 0) {
+      return '${seconds.toString().padLeft(2, '0')}s';
+    }
+    // Format as mm:ss, ensuring two digits for minutes and seconds
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _buildPlayerCard(
@@ -237,13 +288,5 @@ class _LobbyState extends State<Lobby> {
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _lobbyBloc?.add(
-      OnDestroyEvent(),
-    );
-    super.dispose();
   }
 }

@@ -185,24 +185,60 @@ class _GameplayState extends State<Gameplay> {
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      '$player1Name\n$player1Score',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        color: Colors.white,
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '$player1Name',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          Text(
+                                            '$player1Score',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
                                     SizedBox(
-                                      width: 15,
+                                      width: 10,
                                     ),
-                                    Text(
-                                      '$player2Name\n$player2Score',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        color: Colors.white,
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '$player2Name',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          Text(
+                                            '$player2Score',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.white,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
                                   ],
                                 ),

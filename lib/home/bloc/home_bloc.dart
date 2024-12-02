@@ -138,14 +138,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (availableSessions.docs.isNotEmpty) {
       final resultSession =
           await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final currentTime = await getServerTime();
         for (var doc in availableSessions.docs) {
           final sessionDoc = await transaction.get(doc.reference);
           final sessionData = sessionDoc.data();
           if (sessionData != null && sessionData.isNotEmpty) {
             var session = GameSession.fromMap(sessionData);
+            final isValidAmount = (session.totalAmount ?? 0) > 0 &&
+                (profile?.wallet ?? 0) > 0 &&
+                (session.totalAmount ?? 0) <= profile!.wallet;
             final expireTime = session.expireTime;
-            final currentTime = await getServerTime();
-            if (expireTime != null) {
+            if (isValidAmount && expireTime != null) {
               final isSessionAlive = currentTime!.isBefore(
                 expireTime,
               );
@@ -157,6 +160,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 transaction.update(sessionDoc.reference, {
                   'playerIds': FieldValue.arrayUnion([playerId]),
                   'gameStatus': GameStatus.started.name,
+                  'totalAmount': (session.totalAmount! * 2),
                 });
                 return session;
               }
@@ -186,6 +190,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       sessionId: sessionId,
       playerIds: [playerId],
       isActive: true,
+      totalAmount: AppUtils.stakingPoints,
       expireTime: await calculateGameExpiration(),
       gameStatus: GameStatus.waiting.name,
     );
@@ -238,9 +243,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Step 5: Convert the server timestamp to DateTime and return it
       return serverTimestamp.toDate();
     } catch (e, stackTrace) {
-      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid}");
+      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid}mm");
       print("Stack Trace :: $stackTrace");
+      return DateTime.timestamp().toUtc();
     }
-    return null;
   }
 }

@@ -60,16 +60,25 @@ class Home extends StatelessWidget {
                       ),
                       Text(
                         profile?.name ?? '',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(
-                        height: 30,
+                        height: 2,
+                      ),
+                      Text(
+                        "Wallet: ${profile?.wallet ?? 0}",
+                      ),
+                      const SizedBox(
+                        height: 35,
                       ),
                       ElevatedButton(
                         onPressed: () => homeBloc.add(
                           HomeStartGameEvent(),
                         ),
                         child: const Text(
-                          'Start',
+                          'Start Game',
                         ),
                       ),
                       const SizedBox(

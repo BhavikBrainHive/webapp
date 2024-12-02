@@ -8,6 +8,7 @@ class GameSession {
   bool? isActive;
   String? gameStatus;
   String? lastReady;
+  double? totalAmount;
   DateTime? startTime;
   DateTime? expireTime;
   DateTime? timestamp;
@@ -17,6 +18,7 @@ class GameSession {
     this.playerIds,
     this.scores,
     this.gameStatus,
+    this.totalAmount,
     this.lastReady,
     this.playerReady,
     this.isActive,
@@ -37,6 +39,7 @@ class GameSession {
       'playerIds': playerIds,
       'scores': scores,
       'lastReady': lastReady,
+      'totalAmount': totalAmount,
       'playerReady': playerReady,
       'isActive': isActive,
       'gameStatus': gameStatus,
@@ -94,6 +97,7 @@ class GameSession {
       playerIds: List<String>.from(map['playerIds']),
       scores: scores,
       playerReady: playerReady,
+      totalAmount: (map['totalAmount'] as num?)?.toDouble(),
       isActive: map['isActive'],
       lastReady: map['lastReady'],
       gameStatus: map['gameStatus'],

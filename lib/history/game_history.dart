@@ -50,6 +50,7 @@ class GameHistory extends StatelessWidget {
                       final gameSession = currentItem.gameSession;
                       final isWinner = currentItem.isWinner;
                       final isDraw = currentItem.isDraw;
+                      final amount = (gameSession.totalAmount ?? 0) / 2;
                       return Container(
                         margin: const EdgeInsets.symmetric(
                           vertical: 5,
@@ -98,8 +99,8 @@ class GameHistory extends StatelessWidget {
                                 isDraw
                                     ? "The match went draw"
                                     : (isWinner
-                                        ? "You've won this match"
-                                        : "You had lost"),
+                                        ? "You've won +$amount"
+                                        : "You had lost -$amount"),
                                 style: TextStyle(
                                   color: isDraw
                                       ? Colors.black

@@ -110,30 +110,110 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
           } else {
             if (_gameSession.gameStatus == GameStatus.finished.name) {
               await _gameSessionSubscription?.cancel();
-              final sessionSnapshot = await _fireStoreInstance
+              //determine winner
+
+              final sessionRef = _fireStoreInstance
                   .collection('gameSessions')
-                  .doc(_gameSession.sessionId)
-                  .get();
-              _gameSession = GameSession.fromMap(sessionSnapshot.data()!);
+                  .doc(_gameSession.sessionId);
+              final dataMap =
+                  await _fireStoreInstance.runTransaction((transaction) async {
+                final sessionSnapshot = await transaction.get(sessionRef);
+                final gameSession =
+                    GameSession.fromMap(sessionSnapshot.data()!);
+
+                final player1Id = gameSession.playerIds!.first!;
+                final player2Id = (gameSession.playerIds!.length ?? 0) > 1
+                    ? gameSession.playerIds!.last!
+                    : null;
+
+                final player1Ref =
+                    _fireStoreInstance.collection('users').doc(player1Id);
+                final player2Ref =
+                    _fireStoreInstance.collection('users').doc(player2Id);
+
+                final player1Snapshot = await transaction.get(player1Ref);
+                final player2Snapshot = await transaction.get(player2Ref);
+
+                final player1 = UserProfile.fromMap(player1Snapshot.data()!);
+                final player2 = UserProfile.fromMap(player2Snapshot.data()!);
+
+                final player1score = gameSession.scores?[player1Id] ?? 0;
+                final player2score = gameSession.scores?[player2Id] ?? 0;
+
+                if (player1score != player2score &&
+                    _gameSession.totalAmount != null &&
+                    _gameSession.totalAmount! > 0) {
+                  final player1Wallet = player1.wallet;
+                  final player2Wallet = player2.wallet;
+                  double player1WalletAmount = 0;
+                  double player2WalletAmount = 0;
+                  double eachBetAmount = _gameSession.totalAmount! / 2;
+
+                  if (player1score > player2score) {
+                    player1WalletAmount = player1Wallet + eachBetAmount;
+                    player2WalletAmount = player2Wallet - eachBetAmount;
+                  } else {
+                    player1WalletAmount = player1Wallet - eachBetAmount;
+                    player2WalletAmount = player2Wallet + eachBetAmount;
+                  }
+
+                  transaction.update(player1Ref, {
+                    "wallet": player1WalletAmount,
+                  });
+                  transaction.update(player2Ref, {
+                    "wallet": player2WalletAmount,
+                  });
+                }
+
+                return {
+                  "gameSession": gameSession,
+                  "player1": player1,
+                  "player2": player2,
+                };
+              });
+
+              if (dataMap["gameSession"] != null &&
+                  dataMap["gameSession"] is GameSession) {
+                _gameSession = dataMap["gameSession"] as GameSession;
+              } else {
+                final sessionSnapshot = await _fireStoreInstance
+                    .collection('gameSessions')
+                    .doc(_gameSession.sessionId)
+                    .get();
+                _gameSession = GameSession.fromMap(sessionSnapshot.data()!);
+              }
+
+              late UserProfile player1, player2;
               final player1Id = _gameSession.playerIds!.first!;
               final player2Id = (_gameSession.playerIds!.length ?? 0) > 1
                   ? _gameSession.playerIds!.last!
                   : null;
+
+              if (dataMap["player1"] != null &&
+                  dataMap["player1"] is UserProfile) {
+                player1 = dataMap["player1"] as UserProfile;
+              } else {
+                final player1Snapshot = await _fireStoreInstance
+                    .collection('users')
+                    .doc(player1Id)
+                    .get();
+                player1 = UserProfile.fromMap(player1Snapshot.data()!);
+              }
+              if (dataMap["player2"] != null &&
+                  dataMap["player2"] is UserProfile) {
+                player2 = dataMap["player2"] as UserProfile;
+              } else {
+                final player2Snapshot = await _fireStoreInstance
+                    .collection('users')
+                    .doc(player2Id)
+                    .get();
+                player2 = UserProfile.fromMap(player2Snapshot.data()!);
+              }
               final player1score = _gameSession.scores?[player1Id] ?? 0;
               final player2score = _gameSession.scores?[player2Id] ?? 0;
-              final player1Snapshot = await _fireStoreInstance
-                  .collection('users')
-                  .doc(player1Id)
-                  .get();
-              final player1 = UserProfile.fromMap(player1Snapshot.data()!);
-              final player2Snapshot = await _fireStoreInstance
-                  .collection('users')
-                  .doc(player2Id)
-                  .get();
-              final player2 = UserProfile.fromMap(player2Snapshot.data()!);
 
-              //determine winner
               final result = _determineWinner();
+
               emit(GameplayLoadingState(isLoading: false));
               emit(
                 GameCompleteState(
@@ -219,11 +299,10 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
   ) async {
     emit(GameplayLoadingState());
     _scoreTimer?.cancel();
-    await Future.delayed(Duration(seconds: 2));
     await _updateScoreInTransaction(
       forceUpdate: true,
     );
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(seconds: 2));
     await _fireStoreInstance
         .collection('gameSessions')
         .doc(_gameSession.sessionId)
@@ -311,10 +390,10 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
       // Step 5: Convert the server timestamp to DateTime and return it
       return serverTimestamp?.toDate() ?? DateTime.timestamp().toUtc();
     } catch (e, stackTrace) {
-      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid}");
+      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid} mmm");
       print("Stack Trace :: $stackTrace");
+      return DateTime.timestamp().toUtc();
     }
-    return DateTime.timestamp().toUtc();
   }
 
   @override

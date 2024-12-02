@@ -34,3 +34,13 @@ class OnPlayerReadyState extends LobbyState {
 
   OnPlayerReadyState(this.session);
 }
+
+class TimerRunningState extends LobbyState {
+  final int remainingTime;
+
+  TimerRunningState({
+    required this.remainingTime,
+  });
+}
+
+class RoomExpiredState extends LobbyState {}

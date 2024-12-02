@@ -21,16 +21,76 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _gameSessionSubscription;
   GameSession? _gameSession;
+  Timer? _timer;
+  DateTime? _expireTime;
 
   LobbyBloc() : super(LobbyInitialState()) {
     on<LobbyInitialEvent>(_init);
     on<LobbyPlayerReadyEvent>(_updateReadyStatus);
     on<LobbyPlayerCancelEvent>(_onCancel);
-    on<OnDestroyEvent>(_onDestroy);
+    on<StartTimerEvent>(_startTimer);
+    on<TimerTickEvent>(_timerTickEvent);
+    on<StopTimerEvent>(_stopTimerEvent);
+
     if (_gameSession != null) {
       add(LobbyInitialEvent(
         gameSession: _gameSession!,
       ));
+    }
+  }
+
+  void _startTimer(
+    StartTimerEvent event,
+    Emitter<LobbyState> emit,
+  ) {
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        final int remainingTime = event.duration - timer.tick;
+        if (remainingTime > 0) {
+          add(TimerTickEvent(remainingTime));
+        } else {
+          _timer?.cancel();
+          add(TimerTickEvent(0));
+        }
+      },
+    );
+  }
+
+  void _stopTimerEvent(
+    StopTimerEvent event,
+    Emitter<LobbyState> emit,
+  ) {
+    _timer?.cancel();
+    if (event.isExpired) {
+      add(TimerTickEvent(0));
+    }
+  }
+
+  Future<void> _timerTickEvent(
+    TimerTickEvent event,
+    Emitter<LobbyState> emit,
+  ) async {
+    emit(
+      TimerRunningState(
+        remainingTime: event.remainingTime,
+      ),
+    );
+    if (event.remainingTime <= 0) {
+      if (!player2Ready || !player2Ready) {
+        if (_currentUser.uid == player1!.uid) {
+          await _gameSessionSubscription?.cancel();
+          try {
+            await _fireStoreInstance
+                .collection('gameSessions')
+                .doc(_sessionId)
+                .delete();
+          } catch (e) {
+            print(e);
+          }
+        }
+        emit(RoomExpiredState());
+      }
     }
   }
 
@@ -112,9 +172,22 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
               _player2 = await _getOpponentPlayer(player2Id);
             }
 
+            final expireTime = gameSession.expireTime!;
+            if (_expireTime == null ||
+                _expireTime!.compareTo(expireTime) != 0) {
+              _expireTime = expireTime;
+              int currentTime =
+                  (await getServerTime()).millisecondsSinceEpoch ~/ 1000;
+              int endTime = _expireTime!.millisecondsSinceEpoch ~/ 1000;
+              int timeLeft = endTime - currentTime;
+              _timer?.cancel();
+              add(StartTimerEvent(timeLeft));
+            }
+
             if (player2 != null &&
                 player2Id == null &&
                 player2!.uid == _currentUser.uid) {
+              _timer?.cancel();
               await _gameSessionSubscription?.cancel();
               emit(LobbyExitedState());
               return;
@@ -122,6 +195,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
 
             if ((_player1 != null && player1 == null) ||
                 (_player2 != null && player2 == null) ||
+                (player2 != null && player2Id == null) ||
                 _player1Ready != player1Ready ||
                 _player2Ready != player2Ready) {
               if (_player1 != null && player1 == null) {
@@ -130,6 +204,10 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
               if (_player2 != null && player2 == null) {
                 player2 = _player2;
               }
+
+              if (player2 != null && player2Id == null) {
+                player2 = null;
+              }
               player1Ready = _player1Ready;
               player2Ready = _player2Ready;
 
@@ -137,7 +215,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
                 LobbyPlayerUpdatedState(
                   player1: player1,
                   player2: player2,
-                  currentPlayerId: _currentUser!.uid,
+                  currentPlayerId: _currentUser.uid,
                   isPlayer1Ready: player1Ready,
                   isPlayer2Ready: player2Ready,
                 ),
@@ -146,6 +224,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
               if (gameSession.lastReady != null &&
                   player1Ready &&
                   player2Ready) {
+                add(StopTimerEvent(isExpired: false));
                 await _gameSessionSubscription?.cancel();
                 if (_currentUser.uid == gameSession.lastReady!) {
                   await _fireStoreInstance
@@ -235,6 +314,31 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
     return UserProfile.fromMap(data.data()!);
   }
 
+  Future<DateTime> getServerTime() async {
+    try {
+      // Step 1: Write the temporary document with the server timestamp
+      final DocumentReference tempDoc =
+          _fireStoreInstance.collection('temp').doc(_currentUser.uid);
+      await tempDoc.set({'timestamp': FieldValue.serverTimestamp()});
+
+      // Step 2: Read the document
+      DocumentSnapshot snapshot = await tempDoc.get();
+
+      // Step 3: Retrieve the server timestamp
+      Timestamp? serverTimestamp = snapshot.get('timestamp');
+
+      // Step 4: Delete the temporary document
+      await tempDoc.delete();
+
+      // Step 5: Convert the server timestamp to DateTime and return it
+      return serverTimestamp?.toDate() ?? DateTime.timestamp().toUtc();
+    } catch (e, stackTrace) {
+      print("Error :: $e ${FirebaseAuth.instance.currentUser?.uid} mmm");
+      print("Stack Trace :: $stackTrace");
+      return DateTime.timestamp().toUtc();
+    }
+  }
+
   Future<void> _updateReadyStatus(
     LobbyPlayerReadyEvent event,
     Emitter<LobbyState> emit,
@@ -272,15 +376,8 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
 
   @override
   Future<void> close() async {
+    _timer?.cancel();
     await _gameSessionSubscription?.cancel();
     return super.close();
-  }
-
-  Future<void> _onDestroy(
-    OnDestroyEvent event,
-    Emitter<LobbyState> emit,
-  ) async {
-    await _gameSessionSubscription?.cancel();
-    print("On Destroy called");
   }
 }
