@@ -41,13 +41,16 @@ service cloud.firestore {
                                     request.resource.data.startTime != resource.data.startTime ||
                                     request.resource.data.expireTime != resource.data.expireTime ||
                                     request.resource.data.totalAmount != resource.data.totalAmount ||
-                                    request.resource.data.isActive != resource.data.isActive
+                                    request.resource.data.isActive != resource.data.isActive ||
+                                    request.resource.data.isWalletUpdated != resource.data.isWalletUpdated
                             )
                     );
         }
 
         match /users/{uid} {
-            allow read, write: if request.auth != null;
+            allow read, write, update: if request.auth != null;
+            allow write, update: if request.resource.data.keys().hasOnly(['online']) &&
+                    request.resource.data.online is bool;
         }
         match /temp/{docId} {
             allow create, read, delete: if request.auth != null;

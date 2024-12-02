@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/model/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:webapp/presence/presence_bloc.dart';
+import 'package:webapp/presence/presence_event.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,14 +23,10 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        context.read<PresenceBloc>().add(InitializePresence(user.uid));
         Navigator.pushReplacementNamed(context, '/home');
       }
     });
-
-    FirebaseAuth.instance.authStateChanges().listen((onData) {
-      print("Auth changes:: $onData");
-    });
-    // _handleRedirect();
   }
 
   /// Handles the redirect result after signing in with Google
@@ -62,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 await signInWithGoogle(); // Use the Google Sign-In logic from earlier
             if (user != null) {
               await createUserProfile(user);
+              context.read<PresenceBloc>().add(InitializePresence(user.uid));
               Navigator.pushReplacementNamed(context, '/home');
             }
           },
@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
         userData.data() != null &&
         userData.data()!.isNotEmpty) {
       final user = UserProfile.fromMap(userData.data()!);
-      walletPoints = walletPoints + user.wallet;
+      walletPoints = user.wallet;
     }
 
     final userProfile = UserProfile(

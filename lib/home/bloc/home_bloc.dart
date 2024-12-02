@@ -32,6 +32,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     emit(ProfileLoadingState());
     final user = _fireAuthInstance.currentUser;
+    print("Current user ${user?.uid}");
     if (user != null) {
       _userSubscription = _fireStoreInstance
           .collection('users')
@@ -52,6 +53,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (alreadyGoingSession != null) {
         emit(GameSessionFoundState(alreadyGoingSession));
       }
+    } else {
+      emit(UserNotFoundState());
     }
     emit(
       ProfileLoadingState(

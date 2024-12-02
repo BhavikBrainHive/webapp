@@ -6,6 +6,7 @@ class UserProfile {
   final String email;
   final String? photoUrl;
   final int wallet;
+  final bool online;
   final List<MatchResult> matchHistory;
 
   UserProfile({
@@ -13,6 +14,7 @@ class UserProfile {
     required this.name,
     required this.email,
     this.photoUrl,
+    this.online = false,
     this.wallet = 0,
     this.matchHistory = const [],
   });
@@ -22,6 +24,7 @@ class UserProfile {
       'uid': uid,
       'name': name,
       'email': email,
+      'online': online,
       'photoUrl': photoUrl,
       'wallet': wallet,
       'matchHistory': matchHistory.map((e) => e.toMap()).toList(),
@@ -33,6 +36,7 @@ class UserProfile {
       uid: map['uid'],
       name: map['name'],
       email: map['email'],
+      online: map['online'] ?? false,
       photoUrl: map['photoUrl'],
       wallet: map['wallet'] ?? 0,
       matchHistory: (map['matchHistory'] as List<dynamic>?)

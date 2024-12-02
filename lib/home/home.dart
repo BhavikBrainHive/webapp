@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webapp/enums/game_status.dart';
@@ -7,6 +9,8 @@ import 'package:webapp/model/user.dart';
 
 import 'bloc/home_bloc.dart';
 import 'dart:html' as html;
+import 'dart:js_util' as jsUtil;
+import 'dart:js' as js;
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -29,7 +33,8 @@ class Home extends StatelessWidget {
     return BlocConsumer<HomeBloc, HomeState>(
       buildWhen: (_, state) =>
           state is ProfileUpdatedState || state is ProfileLoadingState,
-      listenWhen: (_, state) => state is GameSessionFoundState,
+      listenWhen: (_, state) =>
+          state is GameSessionFoundState || state is UserNotFoundState,
       listener: _listenHomeStates,
       builder: (_, state) {
         UserProfile? profile;
@@ -110,6 +115,26 @@ class Home extends StatelessWidget {
     );
   }
 
+  /// Connect to MetaMask Wallet
+  Future<String> connectWallet(context) async {
+    final completer = Completer<String>();
+    try {
+      js.context.callMethod('connectWallet', [
+        (result) {
+          completer.complete(result.toString());
+          print('Metamask:: Connecting wallet: $result');
+        },
+      ]);
+      // final dynamic result = await jsUtil.promiseToFuture(promise);
+      // print('Metamask:: Connecting wallet: $result');
+      // return result;
+    } catch (e) {
+      print('Metamask:: Error connecting wallet: $e');
+      completer.complete(e.toString());
+    }
+    return completer.future;
+  }
+
   void _listenHomeStates(
     BuildContext context,
     HomeState state,
@@ -136,6 +161,12 @@ class Home extends StatelessWidget {
           arguments: gameSession,
         );
       }
+    } else if (state is UserNotFoundState) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+        (Route<dynamic> route) => false,
+      );
     }
   }
 }

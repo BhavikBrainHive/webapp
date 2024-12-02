@@ -139,8 +139,9 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
 
                 final player1score = gameSession.scores?[player1Id] ?? 0;
                 final player2score = gameSession.scores?[player2Id] ?? 0;
-
-                if (player1score != player2score &&
+                final isWalletUpdated = gameSession.isWalletUpdated ?? false;
+                if (!isWalletUpdated &&
+                    player1score != player2score &&
                     _gameSession.totalAmount != null &&
                     _gameSession.totalAmount! > 0) {
                   final player1Wallet = player1.wallet;
@@ -156,12 +157,14 @@ class GameplayBloc extends Bloc<GameplayEvent, GameplayState> {
                     player1WalletAmount = player1Wallet - eachBetAmount;
                     player2WalletAmount = player2Wallet + eachBetAmount;
                   }
-
                   transaction.update(player1Ref, {
                     "wallet": player1WalletAmount,
                   });
                   transaction.update(player2Ref, {
                     "wallet": player2WalletAmount,
+                  });
+                  transaction.update(sessionRef, {
+                    "isWalletUpdated": true,
                   });
                 }
 

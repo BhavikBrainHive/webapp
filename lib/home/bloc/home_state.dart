@@ -24,3 +24,5 @@ class GameSessionFoundState extends HomeState {
 
   GameSessionFoundState(this.gameSession);
 }
+
+class UserNotFoundState extends HomeState {}

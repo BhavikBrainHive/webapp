@@ -6,6 +6,7 @@ class GameSession {
   Map<String, int>? scores;
   Map<String, bool>? playerReady;
   bool? isActive;
+  bool? isWalletUpdated;
   String? gameStatus;
   String? lastReady;
   double? totalAmount;
@@ -22,6 +23,7 @@ class GameSession {
     this.lastReady,
     this.playerReady,
     this.isActive,
+    this.isWalletUpdated,
     this.startTime,
     this.expireTime,
     this.timestamp,
@@ -42,6 +44,7 @@ class GameSession {
       'totalAmount': totalAmount,
       'playerReady': playerReady,
       'isActive': isActive,
+      'isWalletUpdated': isWalletUpdated,
       'gameStatus': gameStatus,
       'startTime': start,
       'expireTime': expire,
@@ -101,6 +104,7 @@ class GameSession {
       isActive: map['isActive'],
       lastReady: map['lastReady'],
       gameStatus: map['gameStatus'],
+      isWalletUpdated: map['isWalletUpdated'],
       startTime: start,
       expireTime: expire,
       timestamp: timestamp,

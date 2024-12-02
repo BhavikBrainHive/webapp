@@ -170,7 +170,7 @@ class _LobbyState extends State<Lobby> {
                                       ),
                                     ),
                                     child: Text(
-                                      isReady ? 'Cancel Ready' : 'Start Game',
+                                      isReady ? 'Cancel Ready' : 'Ready',
                                     ),
                                   ),
                                   const SizedBox(
