@@ -6,26 +6,12 @@ import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/home/bloc/home_event.dart';
 import 'package:webapp/home/bloc/home_state.dart';
 import 'package:webapp/model/user.dart';
-
-import 'bloc/home_bloc.dart';
-import 'dart:html' as html;
-import 'dart:js_util' as jsUtil;
 import 'dart:js' as js;
+import 'dart:js_util';
+import 'bloc/home_bloc.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
-
-  void disableBackNavigation() {
-    // Push a new state to prevent back navigation
-    html.window.history
-        .pushState(null, 'Disable Back', html.window.location.href);
-
-    // Listen for popstate and re-push the state
-    html.window.onPopState.listen((event) {
-      html.window.history
-          .pushState(null, 'Disable Back', html.window.location.href);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +43,9 @@ class Home extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircleAvatar(
-                        backgroundImage: NetworkImage(profile?.photoUrl ?? ''),
+                        backgroundImage: NetworkImage(
+                          profile?.photoUrl ?? '',
+                        ),
                         radius: 50,
                       ),
                       const SizedBox(
@@ -79,9 +67,16 @@ class Home extends StatelessWidget {
                         height: 35,
                       ),
                       ElevatedButton(
-                        onPressed: () => homeBloc.add(
-                          HomeStartGameEvent(),
-                        ),
+                        onPressed: () {
+                          final jsPromise =
+                              js.context.callMethod('connectMetaMask', [
+                            (result) {
+                                homeBloc.add(WalletUpdateEvent(result));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("$result")));
+                            }
+                          ]);
+                        },
                         child: const Text(
                           'Start Game',
                         ),
@@ -115,7 +110,7 @@ class Home extends StatelessWidget {
     );
   }
 
-  /// Connect to MetaMask Wallet
+  /*/// Connect to MetaMask Wallet
   Future<String> connectWallet(context) async {
     final completer = Completer<String>();
     try {
@@ -133,7 +128,7 @@ class Home extends StatelessWidget {
       completer.complete(e.toString());
     }
     return completer.future;
-  }
+  }*/
 
   void _listenHomeStates(
     BuildContext context,

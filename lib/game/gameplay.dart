@@ -33,13 +33,15 @@ class _GameplayState extends State<Gameplay> {
   Future<void> didChangeDependencies() async {
     if (_gameplayBloc == null) {
       final gameArgs =
-          ModalRoute.of(context)?.settings.arguments as GameSession;
+          ModalRoute.of(context)?.settings.arguments as GameSession?;
       _gameplayBloc ??= BlocProvider.of<GameplayBloc>(context);
-      _gameplayBloc?.add(
-        GameplayInitialEvent(
-          gameSession: gameArgs,
-        ),
-      );
+      if (gameArgs != null) {
+        _gameplayBloc?.add(
+          GameplayInitialEvent(
+            gameSession: gameArgs,
+          ),
+        );
+      }
     }
     super.didChangeDependencies();
   }
