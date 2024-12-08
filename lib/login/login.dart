@@ -23,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        context.read<PresenceBloc>().add(InitializePresence(user.uid));
+        // context.read<PresenceBloc>().add(InitializePresence(user.uid));
         Navigator.pushReplacementNamed(context, '/home');
       }
     });
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 await signInWithGoogle(); // Use the Google Sign-In logic from earlier
             if (user != null) {
               await createUserProfile(user);
-              context.read<PresenceBloc>().add(InitializePresence(user.uid));
+              // context.read<PresenceBloc>().add(InitializePresence(user.uid));
               Navigator.pushReplacementNamed(context, '/home');
             }
           },
@@ -100,8 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     final GoogleSignInAccount? googleUser = await GoogleSignIn(
       scopes: ['email', 'profile'],
-      clientId:
-          '250440102413-nvjoo5v910b8p46htqfic1vmt2q654oi.apps.googleusercontent.com',
     ).signIn();
 
     if (googleUser == null) {

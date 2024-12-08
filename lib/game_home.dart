@@ -1,12 +1,9 @@
-import 'dart:html' as html; // Required for iframe
-import 'dart:ui_web' as ui;
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:peer2play_plugin/peer2play_plugin.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webapp/unity_widget.dart';
 
 class PluginTest extends StatelessWidget {
   const PluginTest({super.key});
@@ -30,109 +27,23 @@ class PluginTest extends StatelessWidget {
               duration: Duration(seconds: 7),
             ));
             Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => GameHome(
-                          ssId: ssid,
-                          gameUrl: gameUrl,
-                        )));
+              context,
+              MaterialPageRoute(
+                builder: (_) => UnityWidget(
+                  ssId: ssid,
+                  gameUrl: gameUrl,
+                ),
+              ),
+            );
           },
           onError: (onError) {
             print(onError);
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(onError), duration: Duration(seconds: 7)));
+                content: Text(onError), duration: Duration(seconds: 15)));
           },
         ),
       ),
     );
-  }
-}
-
-class GameHome extends StatefulWidget {
-  String ssId, gameUrl;
-
-  GameHome({
-    super.key,
-    required this.ssId,
-    required this.gameUrl,
-  });
-
-  @override
-  State<GameHome> createState() => _GameHomeState();
-}
-
-class _GameHomeState extends State<GameHome> {
-  late WebViewController _controller;
-  late html.IFrameElement _iframeElement;
-
-  @override
-  void initState() {
-    super.initState();
-
-    if (kIsWeb) {
-      // Initialize the iframe
-      _iframeElement = html.IFrameElement()
-        ..src = widget.gameUrl
-        ..style.border = "none"
-        ..style.width = "100%"
-        ..style.height = "100%";
-
-      // Add a listener for receiving messages from Unity
-      html.window.addEventListener("message", _onMessageFromUnity);
-
-      // Add the iframe to the Flutter view registry
-      ui.platformViewRegistry.registerViewFactory(
-        'unity-webgl',
-        (int viewId) => _iframeElement,
-      );
-    }
-  }
-
-  // Handle messages from Unity
-  void _onMessageFromUnity(html.Event event) {
-    if (event is html.MessageEvent) {
-      final data = event.data;
-      // Check if the message is from Unity
-      if (data != null &&
-          data is Map<dynamic, dynamic> &&
-          data['type'] == 'gameLoaded') {
-        print("Game loaded. Sending ssid to Unity...");
-
-        // Send the ssid back to Unity
-        _iframeElement.contentWindow?.postMessage(
-          {
-            'type': 'setSsid',
-            'ssid': widget.ssId,
-          },
-          '*', // Allow communication from any origin
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    // Remove the message listener when the widget is disposed
-    html.window.removeEventListener("message", _onMessageFromUnity);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: HtmlElementView(viewType: 'unity-webgl'), // Embed the iframe
-    );
-  }
-
-  Future<void> onPageLoaded() async {
-    await _controller.runJavaScript('''
-          window.addEventListener('message', (event) => {
-            if (event.data.type === 'gameLoaded') {
-              console.log('Game is loaded. Sending ssid...');
-              window.postMessage({ type: 'setSsid', ssid: "Bhavik" }, "*");
-            }
-          });
-        ''');
   }
 }
 

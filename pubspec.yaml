@@ -49,7 +49,7 @@ dependencies:
   flutter_svg: ^2.0.16
   flutter_screenutil: ^5.9.3
   webview_flutter: ^4.10.0
-  peer2play_plugin: ^0.0.5
+  peer2play_plugin: ^1.1.0
 
 dev_dependencies:
   flutter_test:

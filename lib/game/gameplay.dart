@@ -6,7 +6,6 @@ import 'package:webapp/game/bloc/gameplay_bloc.dart';
 import 'package:webapp/game/bloc/gameplay_event.dart';
 import 'package:webapp/game/bloc/gameplay_state.dart';
 import 'package:webapp/model/game_session.dart';
-import 'dart:html' as html;
 
 class Gameplay extends StatefulWidget {
   const Gameplay({super.key});
@@ -17,17 +16,6 @@ class Gameplay extends StatefulWidget {
 
 class _GameplayState extends State<Gameplay> {
   GameplayBloc? _gameplayBloc;
-
-  @override
-  void initState() {
-    html.window.onBeforeUnload.listen((event) {
-      // Prevent the default behavior
-      event.preventDefault();
-      // Set a custom return value (browsers ignore custom text in modern implementations)
-      (event as html.BeforeUnloadEvent).returnValue = '';
-    });
-    super.initState();
-  }
 
   @override
   Future<void> didChangeDependencies() async {

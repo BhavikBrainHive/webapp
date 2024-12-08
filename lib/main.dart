@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:html';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -15,7 +13,6 @@ import 'package:webapp/home/home.dart';
 import 'package:webapp/lobby/bloc/lobby_bloc.dart';
 import 'package:webapp/lobby/lobby.dart';
 import 'package:webapp/login/login.dart';
-import 'package:webapp/presence/presence_bloc.dart';
 
 import 'config/app_config.dart';
 import 'game_home.dart';
@@ -26,17 +23,17 @@ import 'home/bloc/home_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Peer2playPlugin.initialize();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  ); // Initialize Firebase
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: false, // Disable offline persistence
-  );
-  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
-  final storage = await HydratedStorage.build(
-    storageDirectory: HydratedStorage.webStorageDirectory,
-  );
-  HydratedBloc.storage = storage;
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // ); // Initialize Firebase
+  // FirebaseFirestore.instance.settings = const Settings(
+  //   persistenceEnabled: false, // Disable offline persistence
+  // );
+  // await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  // final storage = await HydratedStorage.build(
+  //   storageDirectory: HydratedStorage.webStorageDirectory,
+  // );
+  // HydratedBloc.storage = storage;
 
   runApp(const MyApp());
 }

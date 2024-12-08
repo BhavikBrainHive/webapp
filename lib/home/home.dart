@@ -1,14 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/home/bloc/home_event.dart';
 import 'package:webapp/home/bloc/home_state.dart';
 import 'package:webapp/model/user.dart';
-import 'dart:js' as js;
-import 'dart:js_util';
+
 import 'bloc/home_bloc.dart';
 
 class Home extends StatelessWidget {
@@ -68,10 +64,9 @@ class Home extends StatelessWidget {
                         height: 35,
                       ),
                       ElevatedButton(
-                        onPressed: () {
-                          js.context
-                              .callMethod('connectMetaMask', [(result) {}]);
-                        },
+                        onPressed: () => homeBloc.add(
+                          HomeStartGameEvent(),
+                        ),
                         child: const Text(
                           'Start Game',
                         ),
