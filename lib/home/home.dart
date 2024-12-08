@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/home/bloc/home_event.dart';
 import 'package:webapp/home/bloc/home_state.dart';
@@ -68,14 +69,8 @@ class Home extends StatelessWidget {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          final jsPromise =
-                              js.context.callMethod('connectMetaMask', [
-                            (result) {
-                                homeBloc.add(WalletUpdateEvent(result));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("$result")));
-                            }
-                          ]);
+                          js.context
+                              .callMethod('connectMetaMask', [(result) {}]);
                         },
                         child: const Text(
                           'Start Game',

@@ -23,7 +23,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitialState()) {
     on<HomeInitialEvent>(_init);
     on<HomeStartGameEvent>(_start);
-    on<WalletUpdateEvent>(_walletConnect);
     add(HomeInitialEvent());
   }
 
@@ -63,15 +62,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ),
     );
     await _userSubscription?.asFuture();
-  }
-
-  void _walletConnect(
-    WalletUpdateEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    // _fireStoreInstance
-    //     .collection('users')
-    //     .doc(_)
   }
 
   Future<void> _start(

@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:html';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:peer2play_plugin/peer2play_plugin.dart';
 import 'package:webapp/firebase_options.dart';
 import 'package:webapp/game/bloc/gameplay_bloc.dart';
 import 'package:webapp/game/gameplay.dart';
@@ -14,19 +17,22 @@ import 'package:webapp/lobby/lobby.dart';
 import 'package:webapp/login/login.dart';
 import 'package:webapp/presence/presence_bloc.dart';
 
+import 'config/app_config.dart';
+import 'game_home.dart';
 import 'history/bloc/game_history_bloc.dart';
 import 'history/game_history.dart';
 import 'home/bloc/home_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Peer2playPlugin.initialize();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ); // Initialize Firebase
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: false, // Disable offline persistence
   );
-
+  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
   final storage = await HydratedStorage.build(
     storageDirectory: HydratedStorage.webStorageDirectory,
   );
@@ -41,18 +47,21 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<PresenceBloc>(
-          create: (_) => PresenceBloc(),
-        ),
-      ],
+    return ScreenUtilInit(
+      designSize: const Size(
+        AppConfig.figmaScreenWidth,
+        AppConfig.figmaScreenHeight,
+      ),
+      minTextAdapt: true,
+      splitScreenMode: true,
       child: MaterialApp(
         title: 'Flutter Demo',
-        initialRoute: '/login',
+        home: const PluginTest(),
         builder: (_, child) {
-          const mobileWidth = 400.0; // Typical mobile width in pixels
-          const mobileHeight = 865.0; // Typical mobile height in pixels
+          const mobileWidth =
+              AppConfig.figmaScreenWidth; // Typical mobile width in pixels
+          const mobileHeight =
+              AppConfig.figmaScreenHeight; // Typical mobile height in pixels
           return LayoutBuilder(builder: (_, __) {
             return Center(
               child: ConstrainedBox(
@@ -105,8 +114,9 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.deepPurple,
           ),
-          scaffoldBackgroundColor: Colors.white,
+          scaffoldBackgroundColor: Color(0xff1c1f24),
           useMaterial3: true,
+          fontFamily: 'Play',
         ),
       ),
     );
