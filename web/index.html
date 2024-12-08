@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <!--
+  <!--
       If you are serving your web app in a path other than the root, change the
       href value below to reflect the base path you are serving from.
 
@@ -14,20 +15,20 @@
       This is a placeholder for base href that will be replaced by the value of
       the `--base-href` argument provided to `flutter build`.
     -->
-<!--    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>-->
-<!--    <script src="walletconnect_sdk.js"></script>-->
-<!--    <script src="metamask_web_sdk.js"></script>-->
-    <script src="https://c0f4f41c-2f55-4863-921b-sdk-docs.github.io/cdn/metamask-sdk.js"></script>
-    <script src="metamask_sdk.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="google-signin-client_id"
-          content="250440102413-nvjoo5v910b8p46htqfic1vmt2q654oi.apps.googleusercontent.com">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <base href="$FLUTTER_BASE_HREF">
+  <!--    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>-->
+  <!--    <script src="walletconnect_sdk.js"></script>-->
+  <!--    <script src="metamask_web_sdk.js"></script>-->
+  <script src="https://c0f4f41c-2f55-4863-921b-sdk-docs.github.io/cdn/metamask-sdk.js"></script>
+  <script src="metamask_sdk.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="google-signin-client_id"
+    content="250440102413-nvjoo5v910b8p46htqfic1vmt2q654oi.apps.googleusercontent.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <base href="$FLUTTER_BASE_HREF">
 
-    <meta charset="UTF-8">
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-    <meta name="description" content="A new Flutter project.">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,30 +42,32 @@
     <title>webapp</title>
     <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
 <script src="main.dart.js" type="application/javascript"></script>
 <script>
     if (!window.crossOriginIsolated) {
       console.warn("Browser not cross-origin isolated. Enabling polyfills.");
     }
-</script>
-<script src="flutter_bootstrap.js" async></script>
-<!--  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>-->
-<script type="module">
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  <!--  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>-->
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 
     const firebaseConfig = {
-  apiKey: "AIzaSyCU-8v6tggWmsV2NV7p2OV6NGfzLyoyECc",
-  authDomain: "webapp-68624.firebaseapp.com",
-  projectId: "webapp-68624",
-  storageBucket: "webapp-68624.firebasestorage.app",
-  messagingSenderId: "250440102413",
-  appId: "1:250440102413:web:d1cd57a0a9bd89db149b44",
-  measurementId: "G-P7J0C96HKG"
-};
+      apiKey: "AIzaSyCU-8v6tggWmsV2NV7p2OV6NGfzLyoyECc",
+      authDomain: "webapp-68624.firebaseapp.com",
+      projectId: "webapp-68624",
+      storageBucket: "webapp-68624.firebasestorage.app",
+      messagingSenderId: "250440102413",
+      appId: "1:250440102413:web:d1cd57a0a9bd89db149b44",
+      measurementId: "G-P7J0C96HKG"
+    };
 
     initializeApp(firebaseConfig);
-</script>
-<!--  <script src="https://apis.google.com/js/api.js" async defer></script>-->
+  </script>
+  <!--  <script src="https://apis.google.com/js/api.js" async defer></script>-->
 </body>
+
 </html>

@@ -57,40 +57,6 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Flutter Demo',
         home: const PluginTest(),
-        builder: (_, child) {
-          const mobileWidth =
-              AppConfig.figmaScreenWidth; // Typical mobile width in pixels
-          const mobileHeight =
-              AppConfig.figmaScreenHeight; // Typical mobile height in pixels
-          return LayoutBuilder(builder: (_, __) {
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: mobileWidth,
-                  maxHeight: mobileHeight,
-                ),
-                child: AspectRatio(
-                  aspectRatio: mobileWidth / mobileHeight,
-                  child: MediaQuery(
-                    data: const MediaQueryData(
-                      size: Size(
-                        mobileWidth,
-                        mobileHeight,
-                      ),
-                      // iPhone X dimensions
-                      devicePixelRatio: 2.0,
-                      // High DPI
-                      padding: EdgeInsets.zero,
-                      viewInsets: EdgeInsets.zero,
-                      viewPadding: EdgeInsets.zero,
-                    ),
-                    child: child!,
-                  ),
-                ),
-              ),
-            );
-          });
-        },
         routes: {
           '/login': (_) => const LoginScreen(),
           '/gamePlay': (_) => BlocProvider<GameplayBloc>(

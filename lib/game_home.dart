@@ -18,7 +18,7 @@ class PluginTest extends StatelessWidget {
         child: ConnectP2PButton(
           onSuccess: (onSuccess) {
             final gameUrl = onSuccess['gameUrl'];
-            String ssid = onSuccess['displayName'];
+            late String ssid;
             if (onSuccess['displayName'] != null) {
               ssid = onSuccess['displayName'];
             } else if (onSuccess['wallet'] != null) {
