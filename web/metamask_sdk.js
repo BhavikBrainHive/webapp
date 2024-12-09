@@ -1,3 +1,4 @@
+alert("Please open this link in an external browser to complete login.");
 const MMSDK = new MetaMaskSDK.MetaMaskSDK({
         dappMetadata: {
           name: "Flutter Web Dapp",

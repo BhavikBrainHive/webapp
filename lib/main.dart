@@ -23,17 +23,17 @@ import 'home/bloc/home_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Peer2playPlugin.initialize();
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // ); // Initialize Firebase
-  // FirebaseFirestore.instance.settings = const Settings(
-  //   persistenceEnabled: false, // Disable offline persistence
-  // );
-  // await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
-  // final storage = await HydratedStorage.build(
-  //   storageDirectory: HydratedStorage.webStorageDirectory,
-  // );
-  // HydratedBloc.storage = storage;
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); // Initialize Firebase
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false, // Disable offline persistence
+  );
+  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  final storage = await HydratedStorage.build(
+    storageDirectory: HydratedStorage.webStorageDirectory,
+  );
+  HydratedBloc.storage = storage;
 
   runApp(const MyApp());
 }
@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         title: 'Flutter Demo',
+        // initialRoute: '/login',
         home: const PluginTest(),
         routes: {
           '/login': (_) => const LoginScreen(),
