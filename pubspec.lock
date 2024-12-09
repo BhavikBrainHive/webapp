@@ -452,10 +452,10 @@ packages:
     dependency: "direct main"
     description:
       name: peer2play_plugin
-      sha256: abd9dddc0afaaea2dd6a3637f755cf099a0a321e42be68b1186c51296fdf79ab
+      sha256: a88d4ca8e6ebfcc23b3fdfe30ab6a6a433be5610aaec241e1eab799a4b15e54f
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.6.0"
   petitparser:
     dependency: transitive
     description:
