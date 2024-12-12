@@ -98,7 +98,7 @@ packages:
     source: hosted
     version: "1.18.0"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: "1e445881f28f22d6140f181e07737b22f1e099a5e1ff94b0af2f9e4a463f4855"
@@ -452,10 +452,10 @@ packages:
     dependency: "direct main"
     description:
       name: peer2play_plugin
-      sha256: b63dbf9b97cc10cfd660b212e82cdaafa16412888e3aee3ce29e68b9554a6f56
+      sha256: "902418971270a74218ba521ffa2c8949bfb1f331981dc8544b4f31d04e25dd8d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.8.0"
+    version: "2.1.2"
   petitparser:
     dependency: transitive
     description:

@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+    match /databases/{database}/documents {
+        match /gameSessions/{sessionId} {
+            // Allow reads for authenticated users
+            allow read: if request.auth != null;
+
+            // Allow deletion only if the authenticated user is the first player in the playerIds array
+            allow delete: if request.auth != null && isFirstPlayer();
+
+            allow update: if request.auth != null &&
+                    request.auth.uid in resource.data.playerIds;
+
+            // Function to check if the authenticated user is the first player
+            function isFirstPlayer() {
+                return resource.data.playerIds.size() > 0 && resource.data.playerIds[0] == request.auth.uid;
+            }
+
+            // Allow writes (create or update) for authenticated users
+            allow write: if request.auth != null &&
+                    (
+                    // Case 1: Creating a new session (no existing document)
+                        !exists(/databases/$(database)/documents/gameSessions/$(sessionId)) ||
+                        // Case 2: Updating playerIds: Only allow if fewer than 2 players exist
+                            (
+                                request.resource.data.playerIds != resource.data.playerIds &&
+                                    resource.data.playerIds.size() < 2
+                            ) ||
+                            request.auth.uid in resource.data.playerIds &&
+                                (
+                                // Allow updating playerReady for the authenticated player
+                                    request.resource.data.playerReady[request.auth.uid] != resource.data.playerReady[request.auth.uid] ||
+                                    // Allow updating lastReady only for the authenticated player
+                                        request.resource.data.lastReady == request.auth.uid
+                                ) ||
+                        // Case 3: Other fields like scores, gameStatus, startTime, and expireTime
+                            (
+                                request.resource.data.scores != resource.data.scores ||
+                                    request.resource.data.gameStatus != resource.data.gameStatus ||
+                                    request.resource.data.startTime != resource.data.startTime ||
+                                    request.resource.data.expireTime != resource.data.expireTime ||
+                                    request.resource.data.totalAmount != resource.data.totalAmount ||
+                                    request.resource.data.isActive != resource.data.isActive ||
+                                    request.resource.data.isWalletUpdated != resource.data.isWalletUpdated
+                            )
+                    );
+        }
+
+        match /users/{uid} {
+            allow read, write, update: if request.auth != null;
+            allow write, update: if request.resource.data.keys().hasOnly(['online']) &&
+                    request.resource.data.online is bool;
+        }
+        match /temp/{docId} {
+            allow create, read, delete: if request.auth != null;
+        }
+    }
+}

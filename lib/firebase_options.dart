@@ -66,4 +66,5 @@ class DefaultFirebaseOptions {
     projectId: 'webapp-68624',
     storageBucket: 'webapp-68624.firebasestorage.app',
   );
+
 }

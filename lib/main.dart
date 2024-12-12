@@ -53,8 +53,9 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         title: 'Flutter Demo',
-        // initialRoute: '/login',
-        home: const PluginTest(),
+        initialRoute: '/login',
+        debugShowCheckedModeBanner: false,
+        // home: const PluginTest(),
         routes: {
           '/login': (_) => const LoginScreen(),
           '/gamePlay': (_) => BlocProvider<GameplayBloc>(
@@ -65,8 +66,15 @@ class MyApp extends StatelessWidget {
                 create: (_) => GameHistoryBloc(),
                 child: const GameHistory(),
               ),
-          '/home': (_) => BlocProvider<HomeBloc>(
-                create: (_) => HomeBloc(),
+          '/home': (_) => MultiBlocProvider(
+                providers: [
+                  BlocProvider<HomeBloc>(
+                    create: (_) => HomeBloc(),
+                  ),
+                  BlocProvider<GameHistoryBloc>(
+                    create: (_) => GameHistoryBloc(),
+                  ),
+                ],
                 child: const Home(),
               ),
           '/lobby': (_) => BlocProvider<LobbyBloc>(

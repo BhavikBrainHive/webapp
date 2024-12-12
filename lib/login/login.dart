@@ -8,6 +8,8 @@ import 'package:webapp/model/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:webapp/presence/presence_bloc.dart';
 import 'package:webapp/presence/presence_event.dart';
+import 'dart:html' as html;
+import 'dart:js' as js;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,8 +27,39 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null) {
         // context.read<PresenceBloc>().add(InitializePresence(user.uid));
         Navigator.pushReplacementNamed(context, '/home');
+      }else{
+          final telegramData = checkTelegramData();
+          if(telegramData != null){
+
+          }
       }
     });
+  }
+
+  Map<String, String>? checkTelegramData(){
+    final scriptLoaded = html.document.querySelector(
+        'script[src="https://telegram.org/js/telegram-web-app.js"]') !=
+        null;
+    if (!scriptLoaded) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Telegram Web App script not loaded."),
+        duration: Duration(seconds: 2),
+      ));
+      return null;
+      // throw Exception('Telegram Web App script not loaded.');
+    }
+
+    // Fetch initData from Telegram WebApp
+    final initData = js.context['Telegram']['WebApp']['initData'];
+    print('Telegram initData::: $initData');
+    if (initData == null || initData.toString().trim().isEmpty) {
+      print('No initData available. Is this running in Telegram?');
+      return null;
+    }
+
+    // Parse initData into a Map
+    final initDataMap = Uri.splitQueryString(initData);
+    return initDataMap;
   }
 
   /// Handles the redirect result after signing in with Google

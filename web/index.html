@@ -2,33 +2,35 @@
 <html>
 
 <head>
-  <!--
-      If you are serving your web app in a path other than the root, change the
-      href value below to reflect the base path you are serving from.
+    <!--
+        If you are serving your web app in a path other than the root, change the
+        href value below to reflect the base path you are serving from.
 
-      The path provided below has to start and end with a slash "/" in order for
-      it to work correctly.
+        The path provided below has to start and end with a slash "/" in order for
+        it to work correctly.
 
-      For more details:
-      * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+        For more details:
+        * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
-      This is a placeholder for base href that will be replaced by the value of
-      the `--base-href` argument provided to `flutter build`.
-    -->
-  <!--    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>-->
-  <!--    <script src="walletconnect_sdk.js"></script>-->
-  <!--    <script src="metamask_web_sdk.js"></script>-->
-  <script src="https://c0f4f41c-2f55-4863-921b-sdk-docs.github.io/cdn/metamask-sdk.js"></script>
-  <script src="metamask_sdk.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="google-signin-client_id"
-    content="250440102413-nvjoo5v910b8p46htqfic1vmt2q654oi.apps.googleusercontent.com">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <base href="$FLUTTER_BASE_HREF">
+        This is a placeholder for base href that will be replaced by the value of
+        the `--base-href` argument provided to `flutter build`.
+      -->
+    <!--    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>-->
+    <!--    <script src="walletconnect_sdk.js"></script>-->
+    <!--    <script src="metamask_web_sdk.js"></script>-->
+    <script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<!--    <script async src="https://telegram.org/js/telegram-widget.js?7"></script>-->
+<!--    <script async src="https://telegram.org/js/telegram-widget.js?15"></script>-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="google-signin-client_secret" content="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">
+    <meta name="google-signin-client_id"
+          content="250440102413-nvjoo5v910b8p46htqfic1vmt2q654oi.apps.googleusercontent.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <base href="$FLUTTER_BASE_HREF">
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+    <meta charset="UTF-8">
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <meta name="description" content="A new Flutter project.">
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,14 +47,33 @@
 
 <body>
 <script src="main.dart.js" type="application/javascript"></script>
+<!--<script>-->
+<!--    // Telegram automatic login-->
+<!--    const botUsername = "Peer2playdemo_bot"; // Replace with your bot username-->
+<!--&lt;!&ndash;    const authUrl = "https://your-backend-url.com/telegram-auth"; // Optional&ndash;&gt;-->
+<!--    TelegramLoginWidget = {-->
+<!--      init: function () {-->
+<!--        TelegramLoginWidget.login(botUsername, null, function (user) {-->
+<!--          window.postMessage({ type: "telegram-auth-success", user }, "*");-->
+<!--        });-->
+<!--      },-->
+<!--    };-->
+<!--</script>-->
+<!--<script>-->
+<!--    TelegramLoginWidget.init();-->
+<!--</script>-->
+<!--<script async-->
+<!--        src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="Peer2playdemo_bot"-->
+<!--        data-size="large" data-radius="5" data-auth-url="javascript:void(0);"-->
+<!--        data-request-access="write"></script>-->
 <script>
     if (!window.crossOriginIsolated) {
       console.warn("Browser not cross-origin isolated. Enabling polyfills.");
     }
-  </script>
-  <script src="flutter_bootstrap.js" async></script>
-  <!--  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>-->
-  <script type="module">
+</script>
+<script src="flutter_bootstrap.js" async></script>
+<!--  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>-->
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 
     const firebaseConfig = {
@@ -66,8 +87,8 @@
     };
 
     initializeApp(firebaseConfig);
-  </script>
-  <!--  <script src="https://apis.google.com/js/api.js" async defer></script>-->
+</script>
+<!--  <script src="https://apis.google.com/js/api.js" async defer></script>-->
 </body>
 
 </html>
