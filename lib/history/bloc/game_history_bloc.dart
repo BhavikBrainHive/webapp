@@ -59,7 +59,7 @@ class GameHistoryBloc extends Bloc<GameHistoryEvent, GameHistoryState> {
           descending: true,
         )
         .snapshots();
-
+    emit(GameHistoryLoadingState());
     _myGameSessionsSubscription = sessionSnapshot.listen(
       (snapshot) async {
         try {

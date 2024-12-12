@@ -53,14 +53,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (alreadyGoingSession != null) {
         emit(GameSessionFoundState(alreadyGoingSession));
       }
+      emit(
+        ProfileLoadingState(
+          isLoading: false,
+        ),
+      );
     } else {
+      emit(
+        ProfileLoadingState(
+          isLoading: false,
+        ),
+      );
       emit(UserNotFoundState());
     }
-    emit(
-      ProfileLoadingState(
-        isLoading: false,
-      ),
-    );
     await _userSubscription?.asFuture();
   }
 
@@ -69,10 +74,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     if (profile != null) {
-      emit(ProfileLoadingState());
-      final gameSession = await joinGameSession();
-      emit(ProfileLoadingState(isLoading: false));
-      emit(GameSessionFoundState(gameSession));
+      if ((profile?.wallet ?? 0) > 0 &&
+          AppUtils.stakingPoints <= (profile?.wallet ?? 0)) {
+        emit(ProfileLoadingState());
+        final gameSession = await joinGameSession();
+        emit(ProfileLoadingState(isLoading: false));
+        emit(GameSessionFoundState(gameSession));
+      } else {
+        emit(HomeInsufficientFundState());
+      }
     }
   }
 

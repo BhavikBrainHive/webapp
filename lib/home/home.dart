@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:webapp/enums/game_status.dart';
+import 'package:webapp/history/bloc/game_history_event.dart';
 import 'package:webapp/home/bloc/home_event.dart';
 import 'package:webapp/home/bloc/home_state.dart';
 import 'package:webapp/model/user.dart';
@@ -21,71 +22,102 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = PageController();
     final homeBloc = BlocProvider.of<HomeBloc>(context, listen: false);
-    return Scaffold(
-      body: PopScope(
-        canPop: false,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: PageView(
-                physics: const NeverScrollableScrollPhysics(),
-                controller: controller,
-                children: [
-                  ProfileTabContent(),
-                  HistoryTabContent(),
-                ],
-              ),
+    return BlocListener<HomeBloc, HomeState>(
+      listenWhen: (_, state) =>
+          state is UserNotFoundState || state is HomeInsufficientFundState,
+      listener: (_, state) {
+        if (state is UserNotFoundState) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (Route<dynamic> route) => false,
+          );
+        } else if (state is HomeInsufficientFundState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Insufficient wallet points!!")));
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: PopScope(
+            canPop: false,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 100.h),
+                    child: PageView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      controller: controller,
+                      onPageChanged: (page) {
+                        if (page == 1) {
+                          context
+                              .read<GameHistoryBloc>()
+                              .add(GameHistoryInitialEvent());
+                        }
+                      },
+                      children: [
+                        ProfileTabContent(),
+                        HistoryTabContent(),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: BottomAppBar(
+                    onSelect: (id) {
+                      controller.jumpToPage(id);
+                    },
+                  ),
+                ),
+                Center(
+                  child: BlocBuilder<HomeBloc, HomeState>(
+                    buildWhen: (prev, current) =>
+                        current is ProfileUpdatedState ||
+                        current is ProfileLoadingState,
+                    builder: (_, state) {
+                      UserProfile? profile;
+                      if (state is ProfileUpdatedState) {
+                        profile = state.profile;
+                      } else {
+                        profile = homeBloc.userProfile;
+                      }
+                      final isLoading = profile == null ||
+                          (state is ProfileLoadingState && state.isLoading);
+                      if (isLoading)
+                        return AbsorbPointer(
+                          absorbing: isLoading,
+                          child: CircularProgressIndicator(),
+                        );
+                      return const SizedBox();
+                    },
+                  ),
+                ),
+                Center(
+                  child: BlocBuilder<GameHistoryBloc, GameHistoryState>(
+                    buildWhen: (_, current) =>
+                        current is GameHistoryLoadingState,
+                    builder: (_, state) {
+                      final isLoading =
+                          state is GameHistoryLoadingState && state.isLoading;
+                      if (isLoading) {
+                        return AbsorbPointer(
+                          absorbing: isLoading,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      return const SizedBox();
+                    },
+                  ),
+                )
+              ],
             ),
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: BottomAppBar(onSelect: (id) {
-                controller.jumpToPage(id);
-              }),
-            ),
-            Center(
-              child: BlocBuilder<HomeBloc, HomeState>(
-                buildWhen: (prev, current) =>
-                    current is ProfileUpdatedState ||
-                    current is ProfileLoadingState,
-                builder: (_, state) {
-                  UserProfile? profile;
-                  if (state is ProfileUpdatedState) {
-                    profile = state.profile;
-                  } else {
-                    profile = homeBloc.userProfile;
-                  }
-                  final isLoading = profile == null ||
-                      (state is ProfileLoadingState && state.isLoading);
-                  if (isLoading)
-                    return AbsorbPointer(
-                      absorbing: isLoading,
-                      child: CircularProgressIndicator(),
-                    );
-                  return const SizedBox();
-                },
-              ),
-            ),
-            Center(
-              child: BlocBuilder<GameHistoryBloc, GameHistoryState>(
-                buildWhen: (_, current) => current is GameHistoryLoadingState,
-                builder: (_, state) {
-                  final isLoading =
-                      state is GameHistoryLoadingState && state.isLoading;
-                  if (isLoading) {
-                    return AbsorbPointer(
-                      absorbing: isLoading,
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            )
-          ],
+          ),
         ),
       ),
     );
@@ -129,13 +161,17 @@ class HistoryTabContent extends StatelessWidget {
           return Center(
             child: Text(
               "No history found",
-              style: TextStyle(color: Colors.white, fontSize: 25.sp),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 25.sp,
+              ),
             ),
           );
         }
         return Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: 10,
+            vertical: 20,
+            horizontal: 20,
           ),
           child: ListView.builder(
             itemCount: list.length,
@@ -157,7 +193,7 @@ class HistoryTabContent extends StatelessWidget {
                   horizontal: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: const Color(0xff30343a),
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Column(
@@ -165,6 +201,7 @@ class HistoryTabContent extends StatelessWidget {
                   children: [
                     Text(
                       '${(pos + 1).toString()} - ${gameSession.sessionId.toUpperCase().substring(0, 5)}...',
+                      style: TextStyle(color: Colors.white),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -198,7 +235,7 @@ class HistoryTabContent extends StatelessWidget {
                                 : "You had lost -$amount"),
                         style: TextStyle(
                           color: isDraw
-                              ? Colors.black
+                              ? Colors.white
                               : (isWinner ? Colors.green : Colors.red),
                         ),
                       ),
@@ -246,6 +283,7 @@ class HistoryTabContent extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
+            color: Colors.white,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -254,6 +292,7 @@ class HistoryTabContent extends StatelessWidget {
           'Score: $playerScore',
           style: const TextStyle(
             fontSize: 12,
+            color: Colors.grey,
           ),
         ),
       ],
@@ -271,7 +310,7 @@ class ProfileTabContent extends StatelessWidget {
       buildWhen: (_, state) =>
           state is ProfileUpdatedState || state is ProfileLoadingState,
       listenWhen: (_, state) =>
-          state is GameSessionFoundState || state is UserNotFoundState,
+          state is GameSessionFoundState,
       listener: _listenHomeStates,
       builder: (_, state) {
         UserProfile? profile;
@@ -281,10 +320,70 @@ class ProfileTabContent extends StatelessWidget {
           profile = homeBloc.userProfile;
         }
         return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          // mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
+            SizedBox(
+              height: 50.h,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.blueAccent,
+                borderRadius: BorderRadius.circular(
+                  10.r,
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(
+                    10.r,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 12.w,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'WALLET',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 10.w,
+                        ),
+                        SizedBox(
+                          height: 20.w,
+                          width: 20.w,
+                          child: SvgPicture.asset(
+                            'assets/svg/coin.svg',
+                          ),
+                        ),
+                        SizedBox(
+                          width: 3.w,
+                        ),
+                        Text(
+                          '${profile?.wallet ?? 0}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Spacer(),
             CircleAvatar(
               backgroundImage: NetworkImage(
                 profile?.photoUrl ?? '',
@@ -292,24 +391,13 @@ class ProfileTabContent extends StatelessWidget {
               radius: 50,
             ),
             const SizedBox(
-              height: 20,
+              height: 18,
             ),
             Text(
               profile?.name ?? '',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-                fontSize: 20.sp,
-              ),
-            ),
-            const SizedBox(
-              height: 2,
-            ),
-            Text(
-              "Wallet: ${profile?.wallet ?? 0}",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w200,
                 fontSize: 20.sp,
               ),
             ),
@@ -349,8 +437,9 @@ class ProfileTabContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
+            Spacer(),
+            SizedBox(
+              height: 100.h,
             ),
             /*ElevatedButton(
                         onPressed: () {

@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:webapp/lobby/bloc/lobby_bloc.dart';
 import 'package:webapp/lobby/bloc/lobby_event.dart';
 import 'package:webapp/lobby/bloc/lobby_state.dart';
@@ -90,6 +92,7 @@ class _LobbyState extends State<Lobby> {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              color: Colors.red,
                             ),
                           );
                         }
@@ -131,11 +134,12 @@ class _LobbyState extends State<Lobby> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.green,
                                 ),
                               ),
                             if (player2 != null)
-                              const SizedBox(
-                                height: 20,
+                              SizedBox(
+                                height: 30.h,
                               ),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -157,38 +161,88 @@ class _LobbyState extends State<Lobby> {
                               ],
                             ),
                             const SizedBox(
-                              height: 20,
+                              height: 40,
                             ),
                             if (!player1Ready || !player2Ready)
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  ElevatedButton(
-                                    onPressed: () => _lobbyBloc?.add(
-                                      LobbyPlayerReadyEvent(
-                                        !isReady,
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent,
+                                      borderRadius: BorderRadius.circular(
+                                        10.r,
                                       ),
                                     ),
-                                    child: Text(
-                                      isReady ? 'Cancel Ready' : 'Ready',
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                          10.r,
+                                        ),
+                                        onTap: () => _lobbyBloc?.add(
+                                          LobbyPlayerReadyEvent(
+                                            !isReady,
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12.w,
+                                            vertical: 12.w,
+                                          ),
+                                          child: Text(
+                                            isReady ? 'Cancel Ready' : 'Ready',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16.sp,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(
                                     width: 10,
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () => _lobbyBloc?.add(
-                                      LobbyPlayerCancelEvent(),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      borderRadius: BorderRadius.circular(
+                                        10.r,
+                                      ),
                                     ),
-                                    child: Text(
-                                      isAdmin ? 'Cancel Game' : 'Discard',
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                          10.r,
+                                        ),
+                                        onTap: () => _lobbyBloc?.add(
+                                          LobbyPlayerCancelEvent(),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12.w,
+                                            vertical: 12.w,
+                                          ),
+                                          child: Text(
+                                            isAdmin ? 'Cancel Game' : 'Discard',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16.sp,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             if (!player1Ready || !player2Ready)
                               const SizedBox(
-                                height: 20,
+                                height: 25,
                               ),
                             if (player1Ready && player2Ready)
                               const Text(
@@ -205,6 +259,7 @@ class _LobbyState extends State<Lobby> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontStyle: FontStyle.italic,
+                                  color: Colors.white,
                                 ),
                               ),
                           ],
@@ -277,14 +332,21 @@ class _LobbyState extends State<Lobby> {
         Text(
           player?.name ??
               (isCurrentPlayer ? 'Loading...' : 'Waiting for Player'),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 15.sp,
           ),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
         Text(
           isReady ? 'Ready' : 'Not Ready',
+          style: TextStyle(
+            fontWeight: FontWeight.w200,
+            fontSize: 13.sp,
+            color: Colors.grey,
+          ),
         ),
       ],
     );

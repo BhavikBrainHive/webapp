@@ -4,6 +4,7 @@ import 'package:webapp/model/user.dart';
 abstract class HomeState {}
 
 class HomeInitialState extends HomeState {}
+class HomeInsufficientFundState extends HomeState {}
 
 class ProfileUpdatedState extends HomeState {
   final UserProfile profile;

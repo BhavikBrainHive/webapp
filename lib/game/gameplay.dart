@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:neon_widgets/neon_widgets.dart';
 import 'package:webapp/game/bloc/gameplay_bloc.dart';
@@ -45,6 +47,7 @@ class _GameplayState extends State<Gameplay> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Spacer(),
                   BlocBuilder<GameplayBloc, GameplayState>(
                     buildWhen: (_, current) =>
                         current is TimerRunningState ||
@@ -58,13 +61,14 @@ class _GameplayState extends State<Gameplay> {
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
+                            color: Colors.red,
                           ),
                         );
                       }
                       return const SizedBox();
                     },
                   ),
-                  const SizedBox(
+                  SizedBox(
                     height: 50,
                   ),
                   BlocBuilder<GameplayBloc, GameplayState>(
@@ -76,30 +80,46 @@ class _GameplayState extends State<Gameplay> {
                         'Your Score: $score',
                         style: const TextStyle(
                           fontSize: 20,
+                          color: Colors.white,
                         ),
                       );
                     },
                   ),
-                  const SizedBox(
-                    height: 50,
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _gameplayBloc?.add(
-                      OnHitTapEvent(),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 20,
+                  Spacer(),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(
+                        10.r,
                       ),
                     ),
-                    child: const Text(
-                      'Hit Me',
-                      style: TextStyle(
-                        fontSize: 24,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          10.r,
+                        ),
+                        onTap: () => _gameplayBloc?.add(
+                          OnHitTapEvent(),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 15,
+                          ),
+                          child: Text(
+                            'Hit Me',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 24,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
+                  Spacer(),
                 ],
               ),
             ),
@@ -163,8 +183,16 @@ class _GameplayState extends State<Gameplay> {
                                           ? r"You've won!!"
                                           : r"You've lost"),
                                   flickerTimeInMilliSeconds: 0,
-                                  textColor: Colors.white,
-                                  spreadColor: Colors.white,
+                                  textColor: isDraw
+                                      ? Colors.white
+                                      : isWinner
+                                          ? Colors.green
+                                          : Colors.red,
+                                  spreadColor: isDraw
+                                      ? Colors.white
+                                      : isWinner
+                                          ? Colors.green
+                                          : Colors.red,
                                   blurRadius: 10,
                                   textSize: 35,
                                 ),
@@ -235,35 +263,37 @@ class _GameplayState extends State<Gameplay> {
                                 SizedBox(
                                   height: 25,
                                 ),
-                                Material(
-                                  type: MaterialType.transparency,
-                                  child: FlickerNeonContainer(
-                                    flickerTimeInMilliSeconds: 0,
-                                    borderRadius: BorderRadius.circular(7),
-                                    lightSpreadRadius: 0,
-                                    lightBlurRadius: 0,
-                                    borderWidth: 0.7,
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(7),
-                                        onTap: () {
-                                          Navigator.pushNamedAndRemoveUntil(
-                                            context,
-                                            '/home',
-                                            (Route<dynamic> route) => false,
-                                          );
-                                        },
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 15,
-                                            vertical: 10,
-                                          ),
-                                          child: Text(
-                                            'Go to home',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueAccent,
+                                    borderRadius: BorderRadius.circular(
+                                      10.r,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(
+                                        10.r,
+                                      ),
+                                      onTap: () {
+                                        Navigator.pushNamedAndRemoveUntil(
+                                          context,
+                                          '/home',
+                                          (Route<dynamic> route) => false,
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12.w,
+                                          vertical: 12.w,
+                                        ),
+                                        child: Text(
+                                          'Back to Home',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16.sp,
                                           ),
                                         ),
                                       ),

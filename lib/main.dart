@@ -53,8 +53,8 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         title: 'Flutter Demo',
-        initialRoute: '/login',
         debugShowCheckedModeBanner: false,
+        initialRoute: '/login',
         // home: const PluginTest(),
         routes: {
           '/login': (_) => const LoginScreen(),
