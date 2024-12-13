@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/history/bloc/game_history_event.dart';
 import 'package:webapp/home/bloc/home_event.dart';
@@ -13,6 +14,7 @@ import '../history/bloc/game_history_bloc.dart';
 import '../history/bloc/game_history_state.dart';
 import '../history/model/game_history_model.dart';
 import '../model/bottom_tab_item.dart';
+import '../toast_widget.dart';
 import 'bloc/home_bloc.dart';
 
 class Home extends StatelessWidget {
@@ -20,6 +22,8 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    FToast toastBuilder = FToast();
+    toastBuilder.init(context);
     final controller = PageController();
     final homeBloc = BlocProvider.of<HomeBloc>(context, listen: false);
     return BlocListener<HomeBloc, HomeState>(
@@ -33,8 +37,16 @@ class Home extends StatelessWidget {
             (Route<dynamic> route) => false,
           );
         } else if (state is HomeInsufficientFundState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Insufficient wallet points!!")));
+          toastBuilder.showToast(
+            gravity: ToastGravity.TOP,
+            toastDuration: const Duration(
+              seconds: 3,
+            ),
+            child: const ToastWidget(
+              message: 'Insufficient wallet points!!',
+              isSuccess: false,
+            ),
+          );
         }
       },
       child: Scaffold(
@@ -64,9 +76,9 @@ class Home extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
+                  bottom: 20.h,
+                  left: 20.w,
+                  right: 20.w,
                   child: BottomAppBar(
                     onSelect: (id) {
                       controller.jumpToPage(id);
@@ -101,8 +113,9 @@ class Home extends StatelessWidget {
                     buildWhen: (_, current) =>
                         current is GameHistoryLoadingState,
                     builder: (_, state) {
-                      final isLoading =
-                          state is GameHistoryLoadingState && state.isLoading;
+                      final isLoading = controller.page?.round() == 1 &&
+                          state is GameHistoryLoadingState &&
+                          state.isLoading;
                       if (isLoading) {
                         return AbsorbPointer(
                           absorbing: isLoading,
@@ -114,7 +127,7 @@ class Home extends StatelessWidget {
                       return const SizedBox();
                     },
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -309,8 +322,7 @@ class ProfileTabContent extends StatelessWidget {
     return BlocConsumer<HomeBloc, HomeState>(
       buildWhen: (_, state) =>
           state is ProfileUpdatedState || state is ProfileLoadingState,
-      listenWhen: (_, state) =>
-          state is GameSessionFoundState,
+      listenWhen: (_, state) => state is GameSessionFoundState,
       listener: _listenHomeStates,
       builder: (_, state) {
         UserProfile? profile;
@@ -325,62 +337,282 @@ class ProfileTabContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.max,
           children: [
             SizedBox(
-              height: 50.h,
+              height: 40.h,
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(
-                  10.r,
-                ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 20.w,
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(
-                    10.r,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 12.w,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent,
+                      borderRadius: BorderRadius.circular(
+                        10.r,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'WALLET',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16.sp,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          10.r,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 12.w,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'WALLET',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16.sp,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 10.w,
+                              ),
+                              SizedBox(
+                                height: 20.w,
+                                width: 20.w,
+                                child: SvgPicture.asset(
+                                  'assets/svg/coin.svg',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 3.w,
+                              ),
+                              Text(
+                                '${profile?.wallet ?? 0}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12.sp,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        SizedBox(
-                          width: 10.w,
-                        ),
-                        SizedBox(
-                          height: 20.w,
-                          width: 20.w,
-                          child: SvgPicture.asset(
-                            'assets/svg/coin.svg',
-                          ),
-                        ),
-                        SizedBox(
-                          width: 3.w,
-                        ),
-                        Text(
-                          '${profile?.wallet ?? 0}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(
+                        10.r,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          10.r,
+                        ),
+                        onTap: () async {
+                          showDialog(
+                              context: context,
+                              useSafeArea: true,
+                              builder: (dialogContext) {
+                                return Center(
+                                  child: Container(
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal:
+                                            MediaQuery.sizeOf(context).width *
+                                                0.06),
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Color(
+                                        0xff292c32,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10.r),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xff30343a),
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(
+                                                10.r,
+                                              ),
+                                            ),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 7.h,
+                                          ),
+                                          child: Text(
+                                            'Logout',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.redAccent,
+                                              fontSize: 25.sp,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 15.h,
+                                            horizontal: 10.w,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                'Are you sure you want to logout?',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xffFFFFFF)
+                                                      .withOpacity(0.5),
+                                                  fontSize: 20.sp,
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                height: 50.h,
+                                              ),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.redAccent,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                          10.r,
+                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Material(
+                                                        color:
+                                                            Colors.transparent,
+                                                        child: InkWell(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                            10.r,
+                                                          ),
+                                                          onTap: () async {
+                                                            await FirebaseAuth
+                                                                .instance
+                                                                .signOut();
+                                                            Navigator
+                                                                .pushNamedAndRemoveUntil(
+                                                              context,
+                                                              '/login',
+                                                              (Route<dynamic>
+                                                                      route) =>
+                                                                  false,
+                                                            );
+                                                          },
+                                                          child: Padding(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 12.w,
+                                                              vertical: 12.w,
+                                                            ),
+                                                            child: Text(
+                                                              'Logout',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 18.sp,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 10.w,
+                                                  ),
+                                                  Expanded(
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Colors.blueAccent,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                          10.r,
+                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Material(
+                                                        color:
+                                                            Colors.transparent,
+                                                        child: InkWell(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                            10.r,
+                                                          ),
+                                                          onTap: () async {
+                                                            Navigator.pop(
+                                                                dialogContext);
+                                                          },
+                                                          child: Padding(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 12.w,
+                                                              vertical: 12.w,
+                                                            ),
+                                                            child: Text(
+                                                              'Cancel',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 18.sp,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              });
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 12.w,
+                          ),
+                          child: Icon(
+                            Icons.exit_to_app,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Spacer(),
@@ -399,6 +631,17 @@ class ProfileTabContent extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontSize: 20.sp,
+              ),
+            ),
+            const SizedBox(
+              height: 2,
+            ),
+            Text(
+              '5702827694',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xffFFFFFF).withOpacity(0.5),
+                fontSize: 12.sp,
               ),
             ),
             const SizedBox(

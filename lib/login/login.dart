@@ -27,24 +27,18 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null) {
         // context.read<PresenceBloc>().add(InitializePresence(user.uid));
         Navigator.pushReplacementNamed(context, '/home');
-      }else{
-          final telegramData = checkTelegramData();
-          if(telegramData != null){
-
-          }
+      } else {
+        final telegramData = checkTelegramData();
+        if (telegramData != null) {}
       }
     });
   }
 
-  Map<String, String>? checkTelegramData(){
+  Map<String, String>? checkTelegramData() {
     final scriptLoaded = html.document.querySelector(
-        'script[src="https://telegram.org/js/telegram-web-app.js"]') !=
+            'script[src="https://telegram.org/js/telegram-web-app.js"]') !=
         null;
     if (!scriptLoaded) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Telegram Web App script not loaded."),
-        duration: Duration(seconds: 2),
-      ));
       return null;
       // throw Exception('Telegram Web App script not loaded.');
     }

@@ -159,8 +159,11 @@ class _GameplayState extends State<Gameplay> {
                       ? Center(
                           child: FlickerNeonContainer(
                             flickerTimeInMilliSeconds: 0,
-                            lightSpreadRadius: 10,
+                            lightSpreadRadius: 1,
                             lightBlurRadius: 20,
+                            margin: EdgeInsets.symmetric(
+                                horizontal:
+                                    MediaQuery.sizeOf(context).width * 0.06),
                             borderRadius: BorderRadius.circular(10),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 15,

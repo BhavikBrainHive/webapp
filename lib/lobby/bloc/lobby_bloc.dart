@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:webapp/enums/game_status.dart';
+import 'package:webapp/history/bloc/game_history_bloc.dart';
 import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
 import 'lobby_state.dart';
@@ -115,6 +117,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
           json['gameSession'],
           isCache: true,
         );
+        print("lobby fromJson ${_gameSession?.sessionId}");
         if (_gameSession != null) {
           // Re-add the `LobbyInitialEvent` after restoration
           add(LobbyInitialEvent(gameSession: _gameSession!));
@@ -155,10 +158,12 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
           try {
             final gameSession = GameSession.fromMap(snapshot.data()!);
             _sessionId = gameSession.sessionId;
-            final player1Id = gameSession.playerIds?.first;
-            final player2Id = (gameSession.playerIds?.length ?? 0) > 1
-                ? gameSession.playerIds?.last
-                : null;
+            final player1Id = gameSession.playerIds
+                ?.firstWhereOrNull((e) => e == _currentUser.uid);
+            final player2Id =
+                player1Id != null && (gameSession.playerIds?.length ?? 0) > 1
+                    ? gameSession.playerIds?.firstWhere((e) => e != player1Id)
+                    : null;
             UserProfile? _player1, _player2;
             bool _player1Ready = player1Id != null &&
                     (gameSession.playerReady?[player1Id] ?? false),
@@ -215,6 +220,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
                 LobbyPlayerUpdatedState(
                   player1: player1,
                   player2: player2,
+                  isHost: _currentUser.uid == gameSession.playerIds?.first,
                   currentPlayerId: _currentUser.uid,
                   isPlayer1Ready: player1Ready,
                   isPlayer2Ready: player2Ready,
@@ -376,6 +382,7 @@ class LobbyBloc extends HydratedBloc<LobbyEvent, LobbyState> {
 
   @override
   Future<void> close() async {
+    clear();
     _timer?.cancel();
     await _gameSessionSubscription?.cancel();
     return super.close();

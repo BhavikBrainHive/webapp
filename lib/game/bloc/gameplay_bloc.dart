@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:collection/collection.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:webapp/const/app_utils.dart';
 import 'package:webapp/enums/game_status.dart';
@@ -42,6 +43,7 @@ class GameplayBloc extends HydratedBloc<GameplayEvent, GameplayState> {
   Map<String, dynamic>? toJson(GameplayState state) {
     // Persist only `gameSession` when available
     if (_gameSession != null) {
+      print("${_gameSession?.sessionId}");
       return {
         'gameSession': _gameSession!.toMap(
           isCache: true,
@@ -59,6 +61,7 @@ class GameplayBloc extends HydratedBloc<GameplayEvent, GameplayState> {
           json['gameSession'],
           isCache: true,
         );
+        print(" fromJson ${_gameSession?.sessionId}");
         if (_gameSession != null) {
           // Re-add the `GameplayInitialEvent` after restoration
           add(GameplayInitialEvent(gameSession: _gameSession!));
@@ -161,9 +164,11 @@ class GameplayBloc extends HydratedBloc<GameplayEvent, GameplayState> {
                 final gameSession =
                     GameSession.fromMap(sessionSnapshot.data()!);
 
-                final player1Id = gameSession.playerIds!.first!;
-                final player2Id = (gameSession.playerIds!.length ?? 0) > 1
-                    ? gameSession.playerIds!.last!
+                final player1Id = gameSession.playerIds
+                    ?.firstWhereOrNull((e) => e == _currentUser.uid);
+                final player2Id = player1Id != null &&
+                        (gameSession.playerIds?.length ?? 0) > 1
+                    ? gameSession.playerIds?.firstWhere((e) => e != player1Id)
                     : null;
 
                 final player1Ref =
@@ -227,9 +232,11 @@ class GameplayBloc extends HydratedBloc<GameplayEvent, GameplayState> {
               }
 
               late UserProfile player1, player2;
-              final player1Id = _gameSession!.playerIds!.first!;
-              final player2Id = (_gameSession!.playerIds!.length ?? 0) > 1
-                  ? _gameSession!.playerIds!.last!
+              final player1Id = _gameSession!.playerIds
+                  ?.firstWhereOrNull((e) => e == _currentUser.uid);
+              final player2Id = player1Id != null &&
+                      (_gameSession!.playerIds?.length ?? 0) > 1
+                  ? _gameSession!.playerIds?.firstWhere((e) => e != player1Id)
                   : null;
 
               if (dataMap["player1"] != null &&
@@ -441,6 +448,7 @@ class GameplayBloc extends HydratedBloc<GameplayEvent, GameplayState> {
 
   @override
   Future<void> close() async {
+    clear();
     _timer?.cancel();
     await _updateScoreInTransaction(
       forceUpdate: true,

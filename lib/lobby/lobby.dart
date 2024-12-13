@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webapp/lobby/bloc/lobby_bloc.dart';
 import 'package:webapp/lobby/bloc/lobby_event.dart';
 import 'package:webapp/lobby/bloc/lobby_state.dart';
 import 'package:webapp/model/game_session.dart';
 import 'package:webapp/model/user.dart';
+
+import '../toast_widget.dart';
 
 class Lobby extends StatefulWidget {
   const Lobby({Key? key}) : super(key: key);
@@ -18,6 +21,14 @@ class Lobby extends StatefulWidget {
 
 class _LobbyState extends State<Lobby> {
   LobbyBloc? _lobbyBloc;
+  late FToast toastBuilder;
+
+  @override
+  void initState() {
+    super.initState();
+    toastBuilder = FToast();
+    toastBuilder.init(context);
+  }
 
   @override
   Future<void> didChangeDependencies() async {
@@ -54,16 +65,32 @@ class _LobbyState extends State<Lobby> {
                 arguments: state.session,
               );
             } else if (state is LobbyExitedState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Room has been cancelled!!")));
+              toastBuilder.showToast(
+                gravity: ToastGravity.TOP,
+                toastDuration: const Duration(
+                  seconds: 3,
+                ),
+                child: const ToastWidget(
+                  message: 'Room has been cancelled!!',
+                  isSuccess: false,
+                ),
+              );
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/home',
                 (Route<dynamic> route) => false,
               );
             } else if (state is RoomExpiredState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Your room has been expired!!")));
+              toastBuilder.showToast(
+                gravity: ToastGravity.TOP,
+                toastDuration: const Duration(
+                  seconds: 3,
+                ),
+                child: const ToastWidget(
+                  message: 'Your room has been expired!!',
+                  isSuccess: false,
+                ),
+              );
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/home',
@@ -123,7 +150,7 @@ class _LobbyState extends State<Lobby> {
                               : currentUserId == player2?.uid
                                   ? player2Ready
                                   : false;
-                          isAdmin = currentUserId == player1?.uid;
+                          isAdmin = state.isHost;
                         }
                         return Column(
                           mainAxisSize: MainAxisSize.min,
@@ -160,85 +187,42 @@ class _LobbyState extends State<Lobby> {
                                 ),
                               ],
                             ),
-                            const SizedBox(
-                              height: 40,
+                            SizedBox(
+                              height: 60.h,
                             ),
                             if (!player1Ready || !player2Ready)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.blueAccent,
-                                      borderRadius: BorderRadius.circular(
-                                        10.r,
-                                      ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(
+                                    10.r,
+                                  ),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(
+                                      10.r,
                                     ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          10.r,
-                                        ),
-                                        onTap: () => _lobbyBloc?.add(
-                                          LobbyPlayerReadyEvent(
-                                            !isReady,
-                                          ),
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 12.w,
-                                            vertical: 12.w,
-                                          ),
-                                          child: Text(
-                                            isReady ? 'Cancel Ready' : 'Ready',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16.sp,
-                                            ),
-                                          ),
+                                    onTap: () => _lobbyBloc?.add(
+                                      LobbyPlayerCancelEvent(),
+                                    ),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 15.w,
+                                        vertical: 10.w,
+                                      ),
+                                      child: Text(
+                                        isAdmin ? 'Discard Game' : 'Exit Game',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16.sp,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent,
-                                      borderRadius: BorderRadius.circular(
-                                        10.r,
-                                      ),
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          10.r,
-                                        ),
-                                        onTap: () => _lobbyBloc?.add(
-                                          LobbyPlayerCancelEvent(),
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 12.w,
-                                            vertical: 12.w,
-                                          ),
-                                          child: Text(
-                                            isAdmin ? 'Cancel Game' : 'Discard',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16.sp,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             if (!player1Ready || !player2Ready)
                               const SizedBox(
@@ -308,30 +292,12 @@ class _LobbyState extends State<Lobby> {
     bool isReady,
     String? loggedPlayerId,
   ) {
-    final isCurrentPlayer = loggedPlayerId == player?.uid;
+    final isCurrentPlayer = player != null && loggedPlayerId == player.uid;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundImage: player?.photoUrl != null
-              ? NetworkImage(
-                  player!.photoUrl!,
-                )
-              : null,
-          child: player?.photoUrl == null
-              ? const Icon(
-                  Icons.person,
-                  size: 30,
-                )
-              : null,
-        ),
-        const SizedBox(
-          height: 10,
-        ),
         Text(
-          player?.name ??
-              (isCurrentPlayer ? 'Loading...' : 'Waiting for Player'),
+          player?.name ?? (isCurrentPlayer ? 'Loading...' : 'Finding'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -340,12 +306,90 @@ class _LobbyState extends State<Lobby> {
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
-        Text(
-          isReady ? 'Ready' : 'Not Ready',
-          style: TextStyle(
-            fontWeight: FontWeight.w200,
-            fontSize: 13.sp,
-            color: Colors.grey,
+        SizedBox(
+          height: 2.h,
+        ),
+        SizedBox(
+          width: 145.w,
+          height: 145.w,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/lobby_player_bg.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              if (player != null)
+                Center(
+                  child: CircleAvatar(
+                    radius: 30,
+                    backgroundImage: player?.photoUrl != null
+                        ? NetworkImage(
+                            player!.photoUrl!,
+                          )
+                        : null,
+                    child: player?.photoUrl == null
+                        ? const Icon(
+                            Icons.person,
+                            size: 30,
+                          )
+                        : null,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 10.h,
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: isCurrentPlayer
+                ? (isReady ? Colors.redAccent : Colors.blueAccent)
+                : player == null
+                    ? Colors.blueAccent
+                    : (isReady ? Colors.greenAccent : Colors.blueAccent),
+            // color: Colors.blueAccent,
+            borderRadius: BorderRadius.circular(
+              10.r,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(
+                10.r,
+              ),
+              onTap: isCurrentPlayer
+                  ? () {
+                      _lobbyBloc?.add(
+                        LobbyPlayerReadyEvent(
+                          !isReady,
+                        ),
+                      );
+                    }
+                  : null,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 15.w,
+                  vertical: 10.w,
+                ),
+                child: Text(
+                  isCurrentPlayer
+                      ? (isReady ? 'Cancel Ready' : 'Click to Ready')
+                      : player == null
+                          ? 'Finding Opponent'
+                          : (isReady ? 'Ready' : 'Not Ready'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],

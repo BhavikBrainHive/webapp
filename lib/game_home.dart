@@ -176,7 +176,7 @@ class _PluginTestState extends State<PluginTest> {
     );
   }
 
-/*@override
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
@@ -233,11 +233,16 @@ class _BottomAppBarState extends State<BottomAppBar> {
     ),
     BottomTabItem(
       id: 1,
+      icon: 'assets/images/history.png',
+      title: 'History',
+    ),
+    BottomTabItem(
+      id: 2,
       icon: 'assets/svg/quests.svg',
       title: 'Quests',
     ),
     BottomTabItem(
-      id: 2,
+      id: 3,
       icon: 'assets/images/airdrop.png',
       title: 'Airdrop',
     ),
