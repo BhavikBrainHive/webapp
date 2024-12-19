@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:peer2play_plugin/peer2play_plugin.dart';
@@ -19,12 +21,12 @@ class PluginTest extends StatefulWidget {
 }
 
 class _PluginTestState extends State<PluginTest> {
-  /*@override
+  @override
   void initState() {
     super.initState();
     validateTelegramData();
     // Listen for Telegram login messages
-    */ /*html.window.onMessage.listen((event) {
+    /*html.window.onMessage.listen((event) {
       final data = event.data;
       print("Authentication failed:: $data");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -42,8 +44,8 @@ class _PluginTestState extends State<PluginTest> {
           print("Authentication failed.");
         }
       }
-    });*/ /*
-  }*/
+    }); */
+  }
 
   void checkTelegramContext() {
     final telegram = js.context['Telegram'];
@@ -71,7 +73,7 @@ class _PluginTestState extends State<PluginTest> {
     }
   }
 
-  void validateTelegramData() {
+  Future<void> validateTelegramData() async {
     // checkTelegramContext();
     final scriptLoaded = html.document.querySelector(
             'script[src="https://telegram.org/js/telegram-web-app.js"]') !=
@@ -108,12 +110,24 @@ class _PluginTestState extends State<PluginTest> {
         duration: Duration(seconds: 2),
       ));
     }
-
-    if (isValid) {
+    await Clipboard.setData(ClipboardData(text: initDataMap.toString()))
+        .then((onValue) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("User logged in $isValid:: $initDataMap"),
+        content: Text("$initDataMap"),
         duration: Duration(seconds: 2),
       ));
+    }).catchError((e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Error $e"),
+        duration: Duration(seconds: 2),
+      ));
+    });
+
+    FirebaseFirestore.instance
+        .collection('collectionPath')
+        .doc('abc')
+        .set(initDataMap);
+    if (isValid) {
       print('Telegram data is valid.');
       print('User data: ${initDataMap}');
     } else {
@@ -167,16 +181,16 @@ class _PluginTestState extends State<PluginTest> {
     return receivedHash == calculatedHash;
   }
 
-  @override
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: BottomSheetContent(),
       ),
     );
-  }
+  }*/
 
-  /*@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
@@ -212,7 +226,7 @@ class _PluginTestState extends State<PluginTest> {
         ),
       ),
     );
-  }*/
+  }
 }
 
 class BottomAppBar extends StatefulWidget {

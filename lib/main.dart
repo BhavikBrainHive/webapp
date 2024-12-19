@@ -38,6 +38,9 @@ void main() async {
   runApp(const MyApp());
 }
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         title: 'Flutter Demo',
+        scaffoldMessengerKey: scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         initialRoute: '/login',
         // home: const PluginTest(),

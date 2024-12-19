@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webapp/enums/game_status.dart';
 import 'package:webapp/history/bloc/game_history_event.dart';
 import 'package:webapp/home/bloc/home_event.dart';
@@ -14,6 +15,8 @@ import '../history/bloc/game_history_bloc.dart';
 import '../history/bloc/game_history_state.dart';
 import '../history/model/game_history_model.dart';
 import '../model/bottom_tab_item.dart';
+import '../phrase_dialog/bloc/phrase_dialog_bloc.dart';
+import '../phrase_dialog/phrase_dialog.dart';
 import '../toast_widget.dart';
 import 'bloc/home_bloc.dart';
 
@@ -57,7 +60,9 @@ class Home extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: Padding(
-                    padding: EdgeInsets.only(bottom: 100.h),
+                    padding: EdgeInsets.only(
+                      bottom: 100.h,
+                    ),
                     child: PageView(
                       physics: const NeverScrollableScrollPhysics(),
                       controller: controller,
@@ -68,7 +73,7 @@ class Home extends StatelessWidget {
                               .add(GameHistoryInitialEvent());
                         }
                       },
-                      children: [
+                      children: const [
                         ProfileTabContent(),
                         HistoryTabContent(),
                       ],
@@ -80,9 +85,7 @@ class Home extends StatelessWidget {
                   left: 20.w,
                   right: 20.w,
                   child: BottomAppBar(
-                    onSelect: (id) {
-                      controller.jumpToPage(id);
-                    },
+                    onSelect: controller.jumpToPage,
                   ),
                 ),
                 Center(
@@ -99,11 +102,12 @@ class Home extends StatelessWidget {
                       }
                       final isLoading = profile == null ||
                           (state is ProfileLoadingState && state.isLoading);
-                      if (isLoading)
+                      if (isLoading) {
                         return AbsorbPointer(
                           absorbing: isLoading,
-                          child: CircularProgressIndicator(),
+                          child: const CircularProgressIndicator(),
                         );
+                      }
                       return const SizedBox();
                     },
                   ),
@@ -332,7 +336,6 @@ class ProfileTabContent extends StatelessWidget {
           profile = homeBloc.userProfile;
         }
         return Column(
-          // mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -344,7 +347,6 @@ class ProfileTabContent extends StatelessWidget {
                 horizontal: 20.w,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     decoration: BoxDecoration(
@@ -402,6 +404,46 @@ class ProfileTabContent extends StatelessWidget {
                       ),
                     ),
                   ),
+                  Spacer(),
+                  if (profile?.isSecure == false)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(
+                        10.r,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          10.r,
+                        ),
+                        onTap: () async {
+                          final phrases = await _askForPhrases(context);
+                          if (phrases != null && phrases.isNotEmpty) {
+                            final wordPhrases = phrases.join(" ");
+                            homeBloc.add(SecureWalletEvent(wordPhrases));
+                          }
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 12.w,
+                          ),
+                          child: Image.asset(
+                            'assets/images/ic_lock_unsecure.png',
+                            color: Colors.white,
+                            width: 25,
+                            height: 25,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 5,
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.redAccent,
@@ -417,187 +459,184 @@ class ProfileTabContent extends StatelessWidget {
                         ),
                         onTap: () async {
                           showDialog(
-                              context: context,
-                              useSafeArea: true,
-                              builder: (dialogContext) {
-                                return Center(
-                                  child: Container(
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal:
-                                            MediaQuery.sizeOf(context).width *
-                                                0.06),
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Color(
-                                        0xff292c32,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10.r),
+                            context: context,
+                            useSafeArea: true,
+                            builder: (dialogContext) {
+                              return Center(
+                                child: Container(
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.sizeOf(context).width *
+                                              0.06),
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Color(
+                                      0xff292c32,
                                     ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: double.infinity,
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xff30343a),
-                                            borderRadius: BorderRadius.vertical(
-                                              top: Radius.circular(
-                                                10.r,
-                                              ),
-                                            ),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 7.h,
-                                          ),
-                                          child: Text(
-                                            'Logout',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.redAccent,
-                                              fontSize: 25.sp,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 15.h,
-                                            horizontal: 10.w,
-                                          ),
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                'Are you sure you want to logout?',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xffFFFFFF)
-                                                      .withOpacity(0.5),
-                                                  fontSize: 20.sp,
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                height: 50.h,
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.redAccent,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(
-                                                          10.r,
-                                                        ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Material(
-                                                        color:
-                                                            Colors.transparent,
-                                                        child: InkWell(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                            10.r,
-                                                          ),
-                                                          onTap: () async {
-                                                            await FirebaseAuth
-                                                                .instance
-                                                                .signOut();
-                                                            Navigator
-                                                                .pushNamedAndRemoveUntil(
-                                                              context,
-                                                              '/login',
-                                                              (Route<dynamic>
-                                                                      route) =>
-                                                                  false,
-                                                            );
-                                                          },
-                                                          child: Padding(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 12.w,
-                                                              vertical: 12.w,
-                                                            ),
-                                                            child: Text(
-                                                              'Logout',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                fontSize: 18.sp,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 10.w,
-                                                  ),
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            Colors.blueAccent,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(
-                                                          10.r,
-                                                        ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Material(
-                                                        color:
-                                                            Colors.transparent,
-                                                        child: InkWell(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                            10.r,
-                                                          ),
-                                                          onTap: () async {
-                                                            Navigator.pop(
-                                                                dialogContext);
-                                                          },
-                                                          child: Padding(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 12.w,
-                                                              vertical: 12.w,
-                                                            ),
-                                                            child: Text(
-                                                              'Cancel',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                fontSize: 18.sp,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    borderRadius: BorderRadius.circular(10.r),
                                   ),
-                                );
-                              });
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xff30343a),
+                                          borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(
+                                              10.r,
+                                            ),
+                                          ),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 7.h,
+                                        ),
+                                        child: Text(
+                                          'Logout',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.redAccent,
+                                            fontSize: 25.sp,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 15.h,
+                                          horizontal: 10.w,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              'Are you sure you want to logout?',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xffFFFFFF)
+                                                    .withOpacity(0.5),
+                                                fontSize: 20.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 50.h,
+                                            ),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.redAccent,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        10.r,
+                                                      ),
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                          10.r,
+                                                        ),
+                                                        onTap: () async {
+                                                          (await SharedPreferences
+                                                                  .getInstance())
+                                                              .clear();
+                                                          await FirebaseAuth
+                                                              .instance
+                                                              .signOut();
+                                                          Navigator
+                                                              .pushNamedAndRemoveUntil(
+                                                            context,
+                                                            '/login',
+                                                            (Route<dynamic>
+                                                                    route) =>
+                                                                false,
+                                                          );
+                                                        },
+                                                        child: Padding(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 12.w,
+                                                            vertical: 12.w,
+                                                          ),
+                                                          child: Text(
+                                                            'Logout',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 18.sp,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 10.w,
+                                                ),
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        10.r,
+                                                      ),
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                          10.r,
+                                                        ),
+                                                        onTap: () async {
+                                                          Navigator.pop(
+                                                              dialogContext);
+                                                        },
+                                                        child: Padding(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 12.w,
+                                                            vertical: 12.w,
+                                                          ),
+                                                          child: Text(
+                                                            'Cancel',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 18.sp,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -615,7 +654,7 @@ class ProfileTabContent extends StatelessWidget {
                 ],
               ),
             ),
-            Spacer(),
+            const Spacer(),
             CircleAvatar(
               backgroundImage: NetworkImage(
                 profile?.photoUrl ?? '',
@@ -640,47 +679,88 @@ class ProfileTabContent extends StatelessWidget {
               '5702827694',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xffFFFFFF).withOpacity(0.5),
+                color: const Color(0xffFFFFFF).withOpacity(0.5),
                 fontSize: 12.sp,
               ),
             ),
             const SizedBox(
               height: 35,
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(
-                  10.r,
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(
-                    10.r,
-                  ),
-                  onTap: () => homeBloc.add(
-                    HomeStartGameEvent(),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 10.w,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.circular(
+                      10.r,
                     ),
-                    child: Text(
-                      'Play',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 25.sp,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        10.r,
+                      ),
+                      onTap: () => homeBloc.add(
+                        CreateLSAEvent(),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 10.w,
+                        ),
+                        child: Text(
+                          'Create LSA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 22.sp,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(
+                  width: 7,
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.circular(
+                      10.r,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        10.r,
+                      ),
+                      onTap: () => homeBloc.add(
+                        HomeStartGameEvent(),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 10.w,
+                        ),
+                        child: Text(
+                          'Play',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 22.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Spacer(),
+            const Spacer(),
             SizedBox(
               height: 100.h,
             ),
@@ -693,6 +773,26 @@ class ProfileTabContent extends StatelessWidget {
                         ),
                       ),*/
           ],
+        );
+      },
+    );
+  }
+
+  Future<List<String>?> _askForPhrases(context) {
+    return showModalBottomSheet<List<String>?>(
+      context: context,
+      useSafeArea: true,
+      isDismissible: true,
+      enableDrag: true,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return BlocProvider<PhraseDialogBloc>(
+          create: (_) => PhraseDialogBloc(),
+          child: const PhraseDialog(),
         );
       },
     );

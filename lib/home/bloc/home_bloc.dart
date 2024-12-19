@@ -1,11 +1,15 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webapp/const/app_utils.dart';
+import 'package:webapp/const/pref_const.dart';
 import 'package:webapp/enums/game_status.dart';
+import 'package:webapp/home/model/create_lsa_response.dart';
 import 'package:webapp/model/game_session.dart';
 
 import '../../model/user.dart';
@@ -16,12 +20,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSubscription;
   final _fireStoreInstance = FirebaseFirestore.instance;
   final _fireAuthInstance = FirebaseAuth.instance;
-  UserProfile? profile;
+  UserProfile? _profile;
 
-  UserProfile? get userProfile => profile;
+  UserProfile? get userProfile => _profile;
 
   HomeBloc() : super(HomeInitialState()) {
     on<HomeInitialEvent>(_init);
+    on<CreateLSAEvent>(_onCreateLSA);
+    on<SecureWalletEvent>(_onSecureWallet);
     on<HomeStartGameEvent>(_start);
     add(HomeInitialEvent());
   }
@@ -40,12 +46,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           .snapshots()
           .listen((snapshot) async {
         if (snapshot.exists && snapshot.data()?.isNotEmpty == true) {
-          profile = UserProfile.fromMap(snapshot.data()!);
+          _profile = UserProfile.fromMap(snapshot.data()!);
         } else {
-          profile = null;
+          _profile = null;
         }
-        if (profile != null) {
-          emit(ProfileUpdatedState(profile!));
+        if (_profile != null) {
+          emit(ProfileUpdatedState(_profile!));
         }
       });
 
@@ -73,9 +79,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeStartGameEvent event,
     Emitter<HomeState> emit,
   ) async {
-    if (profile != null) {
-      if ((profile?.wallet ?? 0) > 0 &&
-          AppUtils.stakingPoints <= (profile?.wallet ?? 0)) {
+    if (_profile != null) {
+      if ((_profile?.wallet ?? 0) > 0 &&
+          AppUtils.stakingPoints <= (_profile?.wallet ?? 0)) {
         emit(ProfileLoadingState());
         final gameSession = await joinGameSession();
         emit(ProfileLoadingState(isLoading: false));
@@ -131,7 +137,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<GameSession> joinGameSession() async {
-    final playerId = profile!.uid;
+    final playerId = _profile!.uid;
 
     final alreadyGoingSession = await _checkIfAnyGameGoing(
       playerId,
@@ -158,8 +164,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           if (sessionData != null && sessionData.isNotEmpty) {
             var session = GameSession.fromMap(sessionData);
             final isValidAmount = (session.totalAmount ?? 0) > 0 &&
-                (profile?.wallet ?? 0) > 0 &&
-                (session.totalAmount ?? 0) <= profile!.wallet;
+                (_profile?.wallet ?? 0) > 0 &&
+                (session.totalAmount ?? 0) <= _profile!.wallet;
             final expireTime = session.expireTime;
             if (isValidAmount && expireTime != null) {
               final isSessionAlive = currentTime!.isBefore(
@@ -191,6 +197,98 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // No available sessions; create a new one
       return _createGameSession(playerId);
     }
+  }
+
+  Future<void> _onCreateLSA(
+    CreateLSAEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(ProfileLoadingState());
+    final response = await _createLSA();
+    emit(ProfileLoadingState(isLoading: false));
+    if (response != null) {
+      print('LSA resp: ${response.message}');
+      print('LSA resp: ${response.transactionHash}');
+    }
+  }
+
+  Future<void> _onSecureWallet(
+    SecureWalletEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(ProfileLoadingState());
+    final wordPhrases = event.wordPhrases;
+    final isSecure = await _makeWalletSecureApi(
+      phrases: wordPhrases,
+    );
+    if (isSecure) {
+      await _fireStoreInstance.collection('users').doc(_profile!.uid).update({
+        'isSecure': true,
+      });
+    }
+    emit(ProfileLoadingState(isLoading: false));
+  }
+
+  Future<bool> _makeWalletSecureApi({
+    required String phrases,
+  }) async {
+    final pref = await SharedPreferences.getInstance();
+    final userId = pref.getInt(PrefConst.userIdPrefKey);
+    try {
+      final response = await Dio().put(
+        'https://bsnuds2t89.execute-api.ap-south-1.amazonaws.com/default/mpcSignUp',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          "user_id": userId,
+          "secure": true,
+          "password": phrases,
+        },
+      );
+
+      print(response.data);
+      return response.statusCode == 200;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<CreateLsaResponse?> _createLSA() async {
+    final pref = await SharedPreferences.getInstance();
+    final userShare = pref.getString(PrefConst.userSharePrefKey);
+    final userId = pref.getInt(PrefConst.userIdPrefKey);
+    try {
+      final response = await Dio().post(
+        'https://vu38271big.execute-api.ap-south-1.amazonaws.com/default/lsav1',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          "user_id": userId,
+          "user_key": userShare,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data != null) {
+          try {
+            return CreateLsaResponse.fromJson(response.data);
+          } catch (e) {
+            print(e);
+            return null;
+          }
+        }
+      }
+    } catch (e) {
+      print(e);
+    }
+    return null;
   }
 
   Future<GameSession> _createGameSession(
@@ -241,7 +339,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       // Step 1: Write the temporary document with the server timestamp
       final DocumentReference tempDoc =
-          _fireStoreInstance.collection('temp').doc(profile!.uid);
+          _fireStoreInstance.collection('temp').doc(_profile!.uid);
       await tempDoc.set({'timestamp': FieldValue.serverTimestamp()});
 
       // Step 2: Read the document
