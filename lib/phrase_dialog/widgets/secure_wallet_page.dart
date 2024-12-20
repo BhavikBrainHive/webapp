@@ -295,7 +295,7 @@ class _CopyClipboardWidgetState extends State<CopyClipboardWidget> {
         child: InkWell(
           borderRadius: BorderRadius.circular(7),
           onTap: () async {
-            final phraseToCopy = widget.wordPhrases.join(', ');
+            final phraseToCopy = widget.wordPhrases.join(' ');
             await Clipboard.setData(ClipboardData(text: phraseToCopy));
             if (!isCopied) {
               setState(() {

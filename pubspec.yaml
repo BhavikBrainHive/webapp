@@ -54,6 +54,8 @@ dependencies:
   web3dart: ^2.7.3
   dio: ^5.7.0
   device_info_plus: ^11.2.0
+  fernet: ^0.0.3
+  pointycastle: ^3.9.1
 
 dev_dependencies:
   flutter_test:

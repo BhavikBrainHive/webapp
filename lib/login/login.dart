@@ -19,6 +19,7 @@ import 'package:webapp/login/sign_up_response.dart';
 import 'package:webapp/login/user_details_response.dart';
 import 'package:webapp/model/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:webapp/phrase_dialog/verify_phrase_dialog.dart';
 import 'package:webapp/presence/presence_bloc.dart';
 import 'package:webapp/presence/presence_event.dart';
 import 'dart:html' as html;
@@ -38,6 +39,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
+  bool isShown = false;
 
   @override
   void initState() {
@@ -96,6 +98,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
 /*
   @override
   void didChangeDependencies() {
@@ -129,9 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 final user =
                     await signInWithGoogle(); // Use the Google Sign-In logic from earlier
                 if (user != null) {
-                  await createUserProfile(user);
+                  final isSuccess = await createUserProfile(user);
                   // context.read<PresenceBloc>().add(InitializePresence(user.uid));
-                  Navigator.pushReplacementNamed(context, '/home');
+                  if (isSuccess) {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  }
                 }
               },
               child: const Text('Sign in with Google'),
@@ -166,7 +175,51 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> createUserProfile(User user) async {
+  Future<bool> showVerifyPhraseDialog(
+    String salt, {
+    int maxAttempts = 5,
+  }) async {
+    final pref = await SharedPreferences.getInstance();
+    int attempts = 0;
+    while (attempts < maxAttempts) {
+      attempts++;
+      final userShare = await showModalBottomSheet<String?>(
+        context: context,
+        useSafeArea: true,
+        isDismissible: false,
+        enableDrag: false,
+        isScrollControlled: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        backgroundColor: Colors.transparent,
+        builder: (dialogContext) {
+          return VerifyPhraseDialog(
+            salt: salt,
+          );
+        },
+      );
+      if (userShare != null) {
+        pref.setString(PrefConst.userSharePrefKey, userShare);
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              'Failed to verify entered phrase. Attempt $attempts of $maxAttempts.'),
+          duration: Duration(seconds: 3),
+        ));
+        await Future.delayed(Duration(milliseconds: 1500));
+      }
+    }
+    // After max attempts
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Maximum verification attempts exceeded.'),
+      duration: Duration(seconds: 3),
+    ));
+    return false;
+  }
+
+  Future<bool> createUserProfile(User user) async {
     setState(() {
       isLoading = true;
     });
@@ -215,9 +268,33 @@ class _LoginScreenState extends State<LoginScreen> {
         backendUID = response.userId!.toInt();
         pref.setInt(PrefConst.userIdPrefKey, backendUID);
         pref.setString(PrefConst.jwtSharePrefKey, response.jwtToken!);
-        pref.setString(PrefConst.referralCodePrefKey, response.referralCode!);
         pref.setString(PrefConst.userSharePrefKey, response.userShare!);
-        pref.setString(PrefConst.backendSharePrefKey, response.backendShare!);
+      }
+    } else {
+      setState(() {
+        isLoading = true;
+      });
+      final response = await _signUpWithBackend(
+        email: user.email!,
+      );
+      bool isDeviceValid = false;
+      String? salt;
+      if (response != null) {
+        isSecure = response.secure == true;
+        isDeviceValid = response.deviceValid == true;
+        salt = response.salt;
+        backendUID = response.userId!.toInt();
+        pref.setInt(PrefConst.userIdPrefKey, backendUID);
+        pref.setString(PrefConst.jwtSharePrefKey, response.jwtToken!);
+        pref.setString(PrefConst.userSharePrefKey, response.userShare!);
+      }
+      if (isSecure && salt != null) {
+        final userShare = await showVerifyPhraseDialog(salt);
+        if (!userShare) {
+          pref.clear();
+          await FirebaseAuth.instance.signOut();
+          return false;
+        }
       }
     }
 
@@ -268,6 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       isLoading = false;
     });
+    return true;
   }
 
   Future<List<String>?> _askForPhrases() {
@@ -339,9 +417,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<SignUpResponse?> _signUpWithBackend({
     required String email,
-    required String username,
-    required String? phrases,
-    required bool shouldSecure,
+    String? username,
+    String? phrases,
+    bool? shouldSecure,
   }) async {
     final deviceId = await _getDeviceUniqueId();
     final response = await Dio().post(
@@ -363,7 +441,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       if (response.data != null) {
         try {
           return SignUpResponse.fromJson(response.data);
